@@ -26,8 +26,10 @@ const STAGE_LABEL: Record<string, string> = {
   PROPOSAL: "Proposition",       NEGOTIATION: "Négociation",
 };
 const STAGE_COLOR: Record<string, string> = {
-  QUALIFICATION: "bg-navy/10 text-navy",   DEMO: "bg-blue-100 text-blue-700",
-  PROPOSAL: "bg-purple-100 text-purple-700", NEGOTIATION: "bg-amber-100 text-amber-700",
+  QUALIFICATION: "bg-[var(--c-teal-bg)] text-teal-bright border border-[var(--c-teal-border)]",
+  DEMO:          "bg-[var(--c-blue-bg)] text-lh-blue border border-[rgba(37,99,235,.25)]",
+  PROPOSAL:      "bg-[var(--c-purple-bg)] text-lh-purple border border-[rgba(124,58,237,.25)]",
+  NEGOTIATION:   "bg-[var(--c-amber-bg)] text-lh-amber border border-[rgba(217,119,6,.25)]",
 };
 const ACTIVITY_ICON: Record<string, string> = {
   EMAIL_IN: "📥", EMAIL_OUT: "📤", CALL: "📞", MEETING: "🤝",
@@ -126,7 +128,7 @@ export default async function DashboardPage() {
                       <div className={`${color} h-2 rounded-full`}
                         style={{ width: totalCompanies > 0 ? `${(count / totalCompanies) * 100}%` : "0%" }} />
                     </div>
-                    <div className="w-7 text-right text-[13px] font-mono font-bold text-navy shrink-0">{count}</div>
+                    <div className="w-7 text-right text-[13px] font-mono font-bold text-text-1 shrink-0">{count}</div>
                   </div>
                 ))}
               </div>
@@ -152,7 +154,7 @@ export default async function DashboardPage() {
                       </span>
                       <span className="text-[11px] text-text-3">{count}</span>
                     </div>
-                    <span className="text-[12px] font-mono font-bold text-navy">{fmt(total)}</span>
+                    <span className="text-[12px] font-mono font-bold text-text-1">{fmt(total)}</span>
                   </div>
                 ))}
                 {byStage.every((s) => s.count === 0) && (
@@ -238,17 +240,34 @@ function KpiCard({ label, value, sub, color }: {
   label: string; value: string; sub: string;
   color: "navy" | "teal" | "blue" | "gold";
 }) {
-  const styles = {
-    navy: { border: "border-navy/20",   text: "text-navy"      },
-    teal: { border: "border-teal/20",   text: "text-teal"      },
-    blue: { border: "border-blue-200",  text: "text-blue-600"  },
-    gold: { border: "border-gold/20",   text: "text-gold"      },
-  }[color];
+  const styles: Record<string, { border: string; text: string; gradient: string }> = {
+    navy: {
+      border:   "border-[rgb(var(--rgb-border))]",
+      text:     "text-text-1",
+      gradient: "[background:var(--kpi-navy-bg)]",
+    },
+    teal: {
+      border:   "border-teal/30",
+      text:     "text-teal",
+      gradient: "[background:var(--kpi-teal-bg)]",
+    },
+    blue: {
+      border:   "border-[rgba(37,99,235,.30)]",
+      text:     "text-lh-blue",
+      gradient: "[background:var(--kpi-blue-bg)]",
+    },
+    gold: {
+      border:   "border-gold/30",
+      text:     "text-gold",
+      gradient: "[background:var(--kpi-gold-bg)]",
+    },
+  };
+  const s = styles[color];
   return (
-    <div className={`bg-surface rounded-xl border shadow-sm p-5 ${styles.border}`}>
-      <div className="text-[11px] font-bold uppercase tracking-wider text-text-3">{label}</div>
-      <div className={`mt-2 text-[26px] font-extrabold font-mono ${styles.text}`}>{value}</div>
-      <div className="mt-1 text-[11px] text-text-3">{sub}</div>
+    <div className={`rounded-xl border shadow-sm p-5 ${s.border} ${s.gradient}`}>
+      <div className="text-[10px] font-bold uppercase tracking-widest text-text-3 mb-2">{label}</div>
+      <div className={`text-[28px] font-extrabold font-mono leading-none ${s.text}`}>{value}</div>
+      <div className="mt-2 text-[11px] text-text-3">{sub}</div>
     </div>
   );
 }
