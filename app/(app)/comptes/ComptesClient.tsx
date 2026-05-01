@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Chip, ScoreCircle } from "@/components/ui/Chip";
-import { Avatar } from "@/components/ui/Avatar";
+import { Chip } from "@/components/ui/Chip";
 
 type Status = "PROSPECT" | "LEAD" | "CLIENT" | "LOST";
 
@@ -110,7 +109,6 @@ export function ComptesClient({ companies }: { companies: Company[] }) {
           <table className="w-full">
             <thead>
               <tr className="bg-bg border-b border-border text-[10px] font-bold uppercase tracking-wider text-text-3">
-                <th className="text-left px-3 py-3 w-[60px]">ICP</th>
                 <th className="text-left px-3 py-3 min-w-[260px]">Compte</th>
                 <th className="text-left px-3 py-3">Statut</th>
                 <th className="text-left px-3 py-3">Région · Ville</th>
@@ -126,11 +124,7 @@ export function ComptesClient({ companies }: { companies: Company[] }) {
                 return (
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-bg/50 transition-colors">
                     <td className="px-3 py-3">
-                      <ScoreCircle score={c.icp} />
-                    </td>
-                    <td className="px-3 py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar name={c.name} seed={c.id} size={32} />
                         <div>
                           <Link href={`/comptes/${c.id}` as never} className="text-[13px] font-semibold text-navy hover:underline">
                             {c.name}
