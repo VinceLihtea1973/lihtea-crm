@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type NavItem = { href: string; label: string; icon: string };
 type NavGroup = { label: string; items: NavItem[] };
@@ -101,14 +102,15 @@ export function Sidebar({ userName }: { userName: string }) {
 
       {/* Footer user */}
       <div className="px-2 pt-[10px] pb-3 border-t border-white/[0.07] flex items-center justify-between">
-        <div className="flex items-center gap-[9px] px-2 py-[6px]">
+        <div className="flex items-center gap-[9px] px-2 py-[6px] min-w-0">
           <div className="w-8 h-8 rounded-full bg-teal grid place-items-center font-extrabold text-[11px] text-white flex-none">
             {initials}
           </div>
-          <div className="text-white/80 text-[13px] font-semibold">
+          <div className="text-white/80 text-[13px] font-semibold truncate">
             {userName}
           </div>
         </div>
+        <ThemeToggle />
       </div>
     </nav>
   );

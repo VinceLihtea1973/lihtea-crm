@@ -1,78 +1,131 @@
 /* ══════════════════════════════════════════════════════
-   Lihtea platform — styles globaux
-   Portage du design system de la démo HTML (1:1 visuel).
-   Les tokens sont exposés en CSS vars + Tailwind.
+   Lihtea platform — design system v2
+   Thème clair + sombre, tokens CSS vars + Tailwind.
 ════════════════════════════════════════════════════════ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Couleurs fixes (accent, statuts) ──────────────── */
 :root {
-  --c-navy: #0f2b46;
-  --c-navy-2: #1a3d5c;
-  --c-navy-3: #264a6a;
-  --c-teal: #0d9488;
-  --c-teal-2: #0f766e;
-  --c-teal-bright: #14b8a6;
-  --c-teal-bg: #f0fdfa;
-  --c-teal-border: #99f6e4;
-  --c-gold: #d4a843;
-  --c-gold-bg: #faf0d4;
-  --c-green: #059669;
-  --c-green-bg: #ecfdf5;
-  --c-red: #dc2626;
-  --c-red-bg: #fef2f2;
-  --c-blue: #2563eb;
-  --c-blue-bg: #eff6ff;
-  --c-purple: #7c3aed;
-  --c-purple-bg: #f5f3ff;
-  --c-amber: #d97706;
-  --c-amber-bg: #fffbeb;
-  --c-bg: #f6f8fb;
-  --c-surface: #ffffff;
-  --c-border: #e1e7ef;
-  --c-border-strong: #c5cdd8;
-  --c-text: #1a2332;
-  --c-text-2: #4a5568;
-  --c-text-3: #8896a7;
-  --radius: 12px;
+  --c-navy:         #0f2b46;
+  --c-navy-2:       #1a3d5c;
+  --c-navy-3:       #264a6a;
+  --c-teal:         #0d9488;
+  --c-teal-2:       #0f766e;
+  --c-teal-bright:  #14b8a6;
+  --c-teal-bg:      #f0fdfa;
+  --c-teal-border:  #99f6e4;
+  --c-gold:         #d4a843;
+  --c-gold-bg:      #faf0d4;
+  --c-green:        #059669;
+  --c-green-bg:     #ecfdf5;
+  --c-red:          #dc2626;
+  --c-red-bg:       #fef2f2;
+  --c-blue:         #2563eb;
+  --c-blue-bg:      #eff6ff;
+  --c-purple:       #7c3aed;
+  --c-purple-bg:    #f5f3ff;
+  --c-amber:        #d97706;
+  --c-amber-bg:     #fffbeb;
+
+  /* Géométrie & animation */
+  --radius:    12px;
   --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(15, 43, 70, 0.06), 0 1px 2px rgba(15, 43, 70, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 43, 70, 0.08), 0 2px 4px rgba(15, 43, 70, 0.04);
-  --shadow-lg: 0 12px 40px rgba(15, 43, 70, 0.12);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-* {
-  box-sizing: border-box;
+/* ─── Thème CLAIR (défaut) ───────────────────────────── */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Canaux RGB pour les utilitaires opacity Tailwind */
+  --rgb-bg:            246 248 251;
+  --rgb-surface:       255 255 255;
+  --rgb-surface-2:     248 250 252;
+  --rgb-border:        225 231 239;
+  --rgb-border-strong: 197 205 216;
+  --rgb-text:          26 35 50;
+  --rgb-text-2:        74 85 104;
+  --rgb-text-3:        136 150 167;
+
+  /* Vars directes (usage inline / scrollbar / body) */
+  --c-bg:            rgb(var(--rgb-bg));
+  --c-surface:       rgb(var(--rgb-surface));
+  --c-surface-2:     rgb(var(--rgb-surface-2));
+  --c-border:        rgb(var(--rgb-border));
+  --c-border-strong: rgb(var(--rgb-border-strong));
+  --c-text:          rgb(var(--rgb-text));
+  --c-text-2:        rgb(var(--rgb-text-2));
+  --c-text-3:        rgb(var(--rgb-text-3));
+
+  /* Ombres */
+  --shadow:    0 1px 3px rgba(15,43,70,.06), 0 1px 2px rgba(15,43,70,.04);
+  --shadow-md: 0 4px 12px rgba(15,43,70,.08), 0 2px 4px rgba(15,43,70,.04);
+  --shadow-lg: 0 12px 40px rgba(15,43,70,.12);
 }
 
-html {
-  font-size: 16px;
+/* ─── Thème SOMBRE ──────────────────────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --rgb-bg:            8 14 26;
+  --rgb-surface:       14 22 38;
+  --rgb-surface-2:     20 31 50;
+  --rgb-border:        40 58 82;
+  --rgb-border-strong: 58 82 110;
+  --rgb-text:          226 232 240;
+  --rgb-text-2:        148 163 184;
+  --rgb-text-3:        100 116 139;
+
+  --c-bg:            rgb(var(--rgb-bg));
+  --c-surface:       rgb(var(--rgb-surface));
+  --c-surface-2:     rgb(var(--rgb-surface-2));
+  --c-border:        rgb(var(--rgb-border));
+  --c-border-strong: rgb(var(--rgb-border-strong));
+  --c-text:          rgb(var(--rgb-text));
+  --c-text-2:        rgb(var(--rgb-text-2));
+  --c-text-3:        rgb(var(--rgb-text-3));
+
+  /* Ombres dark — plus bleues / lumineuses */
+  --shadow:    0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4), 0 2px 6px rgba(0,0,0,.3);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,.5);
+
+  /* Statut bg — version sombre */
+  --c-teal-bg:   rgba(13,148,136,.15);
+  --c-gold-bg:   rgba(212,168,67,.12);
+  --c-green-bg:  rgba(5,150,105,.12);
+  --c-red-bg:    rgba(220,38,38,.12);
+  --c-blue-bg:   rgba(37,99,235,.12);
+  --c-purple-bg: rgba(124,58,237,.12);
+  --c-amber-bg:  rgba(217,119,6,.12);
 }
 
-html,
-body {
+/* ─── Base ──────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+html, body {
   height: 100%;
   background: var(--c-bg);
   color: var(--c-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 body {
   font-family: var(--font-dm-sans), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Scrollbars fines façon Lihtea */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+/* ─── Scrollbars ────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--c-border-strong);
-  border-radius: 4px;
+  border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--c-text-3);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--c-text-3); }

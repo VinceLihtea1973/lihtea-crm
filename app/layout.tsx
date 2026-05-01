@@ -23,13 +23,35 @@ export const metadata: Metadata = {
     "Plateforme commerciale Lihtea : prospection, CRM, séquences, simulateur.",
 };
 
+/* Script inline exécuté AVANT le rendu — évite le flash de thème */
+const themeScript = `
+(function() {
+  try {
+    var t = localStorage.getItem('lihtea-theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  } catch(e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${dmSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html
+      lang="fr"
+      className={`${dmSans.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
+      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );
