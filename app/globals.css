@@ -1,134 +1,126 @@
 /* ══════════════════════════════════════════════════════
-   Lihtea platform — design system v2
-   Thème clair + sombre. Tokens CSS vars + Tailwind.
+   Lihtea — Design System v3  (light + dark)
 ════════════════════════════════════════════════════════ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Couleurs d'accent fixes ───────────────────────── */
+/* ── Accents fixes ──────────────────────────────────── */
 :root {
-  --c-navy:         #0f2b46;
-  --c-navy-2:       #1a3d5c;
-  --c-navy-3:       #264a6a;
-  --c-teal:         #0d9488;
-  --c-teal-2:       #0f766e;
-  --c-teal-bright:  #14b8a6;
-  --c-gold:         #d4a843;
-  --c-green:        #059669;
-  --c-red:          #dc2626;
-  --c-blue:         #2563eb;
-  --c-purple:       #7c3aed;
-  --c-amber:        #d97706;
-  --radius:         12px;
-  --radius-sm:      8px;
-  --ease-out:       cubic-bezier(0.16, 1, 0.3, 1);
+  --c-teal:        #0d9488;
+  --c-teal-bright: #14b8a6;
+  --c-gold:        #d4a843;
+  --c-green:       #059669;
+  --c-red:         #dc2626;
+  --c-blue:        #2563eb;
+  --c-purple:      #7c3aed;
+  --c-amber:       #d97706;
+  --radius:    12px;
+  --radius-sm: 8px;
+  --ease-out:  cubic-bezier(0.16,1,0.3,1);
 }
 
-/* ─── THÈME CLAIR ────────────────────────────────────── */
-:root,
-[data-theme="light"] {
+/* ── THÈME CLAIR ────────────────────────────────────── */
+:root, [data-theme="light"] {
   color-scheme: light;
-  --rgb-bg:            246 248 251;
+
+  --rgb-bg:            241 245 249;
   --rgb-surface:       255 255 255;
   --rgb-surface-2:     248 250 252;
-  --rgb-border:        225 231 239;
-  --rgb-border-strong: 197 205 216;
-  --rgb-text:          26  35  50;
-  --rgb-text-2:        74  85  104;
-  --rgb-text-3:        136 150 167;
+  --rgb-border:        217 226 238;
+  --rgb-border-strong: 186 200 218;
+  --rgb-text:          15  23  42;
+  --rgb-text-2:        71  85  105;
+  --rgb-text-3:        120 136 158;
 
-  --c-bg:            rgb(246 248 251);
+  --c-bg:            rgb(241 245 249);
   --c-surface:       rgb(255 255 255);
-  --c-border:        rgb(225 231 239);
-  --c-text:          rgb(26 35 50);
-  --c-text-2:        rgb(74 85 104);
-  --c-text-3:        rgb(136 150 167);
+  --c-border:        rgb(217 226 238);
+  --c-text:          rgb(15 23 42);
+  --c-text-2:        rgb(71 85 105);
+  --c-text-3:        rgb(120 136 158);
 
-  /* Statuts bg clair */
-  --c-teal-bg:   #f0fdfa;
-  --c-gold-bg:   #faf0d4;
-  --c-green-bg:  #ecfdf5;
-  --c-red-bg:    #fef2f2;
-  --c-blue-bg:   #eff6ff;
-  --c-purple-bg: #f5f3ff;
-  --c-amber-bg:  #fffbeb;
-  --c-teal-border: #99f6e4;
+  --c-teal-bg:   rgba(13,148,136,.08);
+  --c-gold-bg:   rgba(212,168,67,.10);
+  --c-green-bg:  rgba(5,150,105,.08);
+  --c-red-bg:    rgba(220,38,38,.08);
+  --c-blue-bg:   rgba(37,99,235,.08);
+  --c-purple-bg: rgba(124,58,237,.08);
+  --c-amber-bg:  rgba(217,119,6,.08);
+  --c-teal-border: rgba(13,148,136,.30);
 
-  /* Ombres */
-  --shadow:    0 1px 3px rgba(15,43,70,.07), 0 1px 2px rgba(15,43,70,.05);
-  --shadow-md: 0 4px 12px rgba(15,43,70,.09), 0 2px 4px rgba(15,43,70,.05);
-  --shadow-lg: 0 12px 40px rgba(15,43,70,.13);
+  --shadow:    0 1px 3px rgba(15,23,42,.07), 0 1px 2px rgba(15,23,42,.04);
+  --shadow-md: 0 4px 16px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.05);
+  --shadow-lg: 0 16px 48px rgba(15,23,42,.12);
 
-  /* KPI card gradients */
-  --kpi-navy-bg:  linear-gradient(135deg,#fff 0%,#f0f4f8 100%);
-  --kpi-teal-bg:  linear-gradient(135deg,#f0fdfa 0%,#ccfbf1 100%);
-  --kpi-blue-bg:  linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);
-  --kpi-gold-bg:  linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);
+  /* sidebar clair — reste navy */
+  --sidebar-bg:      #0f2342;
+  --sidebar-nav-bg:  #0d1f3b;
+
+  /* KPI gradients clair */
+  --kpi-1: linear-gradient(135deg,#fff 0%,#f1f5f9 100%);
+  --kpi-2: linear-gradient(135deg,rgba(13,148,136,.05) 0%,rgba(13,148,136,.12) 100%);
+  --kpi-3: linear-gradient(135deg,rgba(37,99,235,.05) 0%,rgba(37,99,235,.12) 100%);
+  --kpi-4: linear-gradient(135deg,rgba(212,168,67,.06) 0%,rgba(212,168,67,.14) 100%);
 }
 
-/* ─── THÈME SOMBRE ───────────────────────────────────── */
+/* ── THÈME SOMBRE ────────────────────────────────────── */
 [data-theme="dark"] {
   color-scheme: dark;
 
-  /* Fond quasi-noir avec teinte bleue nuit */
-  --rgb-bg:            5   9   18;
-  --rgb-surface:       10  17  31;
-  --rgb-surface-2:     15  25  44;
-  --rgb-border:        28  42  66;
-  --rgb-border-strong: 44  63  96;
-  --rgb-text:          220 228 242;
-  --rgb-text-2:        148 165 192;
-  --rgb-text-3:        88  106 138;
+  --rgb-bg:            4   8   18;
+  --rgb-surface:       8   14  28;
+  --rgb-surface-2:     12  20  38;
+  --rgb-border:        24  38  62;
+  --rgb-border-strong: 38  58  92;
+  --rgb-text:          218 228 244;
+  --rgb-text-2:        140 158 188;
+  --rgb-text-3:        80  100 130;
 
-  --c-bg:            rgb(5 9 18);
-  --c-surface:       rgb(10 17 31);
-  --c-border:        rgb(28 42 66);
-  --c-text:          rgb(220 228 242);
-  --c-text-2:        rgb(148 165 192);
-  --c-text-3:        rgb(88 106 138);
+  --c-bg:            rgb(4 8 18);
+  --c-surface:       rgb(8 14 28);
+  --c-border:        rgb(24 38 62);
+  --c-text:          rgb(218 228 244);
+  --c-text-2:        rgb(140 158 188);
+  --c-text-3:        rgb(80 100 130);
 
-  /* Statuts bg foncé */
-  --c-teal-bg:   rgba(13,148,136,.18);
-  --c-gold-bg:   rgba(212,168,67,.15);
-  --c-green-bg:  rgba(5,150,105,.15);
-  --c-red-bg:    rgba(220,38,38,.15);
-  --c-blue-bg:   rgba(37,99,235,.15);
-  --c-purple-bg: rgba(124,58,237,.15);
-  --c-amber-bg:  rgba(217,119,6,.15);
-  --c-teal-border: rgba(13,148,136,.35);
+  --c-teal-bg:   rgba(13,148,136,.16);
+  --c-gold-bg:   rgba(212,168,67,.14);
+  --c-green-bg:  rgba(5,150,105,.14);
+  --c-red-bg:    rgba(220,38,38,.14);
+  --c-blue-bg:   rgba(37,99,235,.14);
+  --c-purple-bg: rgba(124,58,237,.14);
+  --c-amber-bg:  rgba(217,119,6,.14);
+  --c-teal-border: rgba(20,184,166,.25);
 
-  /* Ombres dark */
-  --shadow:    0 1px 4px rgba(0,0,0,.5);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,.65);
+  --shadow:    0 1px 4px rgba(0,0,0,.6);
+  --shadow-md: 0 4px 20px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
+  --shadow-lg: 0 16px 56px rgba(0,0,0,.7);
 
-  /* KPI card gradients dark */
-  --kpi-navy-bg: linear-gradient(135deg,rgb(10 17 31) 0%,rgb(14 24 44) 100%);
-  --kpi-teal-bg: linear-gradient(135deg,rgb(10 17 31) 0%,rgba(13,148,136,.12) 100%);
-  --kpi-blue-bg: linear-gradient(135deg,rgb(10 17 31) 0%,rgba(37,99,235,.12) 100%);
-  --kpi-gold-bg: linear-gradient(135deg,rgb(10 17 31) 0%,rgba(212,168,67,.12) 100%);
+  /* sidebar sombre — beaucoup plus dark */
+  --sidebar-bg:     #04080f;
+  --sidebar-nav-bg: #04080f;
+
+  /* KPI gradients sombre */
+  --kpi-1: linear-gradient(135deg,rgb(8 14 28) 0%,rgb(14 22 42) 100%);
+  --kpi-2: linear-gradient(135deg,rgb(8 14 28) 0%,rgba(13,148,136,.18) 100%);
+  --kpi-3: linear-gradient(135deg,rgb(8 14 28) 0%,rgba(37,99,235,.18) 100%);
+  --kpi-4: linear-gradient(135deg,rgb(8 14 28) 0%,rgba(212,168,67,.18) 100%);
 }
 
-/* ─── Base ──────────────────────────────────────────── */
+/* ── Base ────────────────────────────────────────────── */
 * { box-sizing: border-box; }
 html { font-size: 16px; }
-
 html, body {
   height: 100%;
   background: var(--c-bg);
   color: var(--c-text);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: background-color .2s ease, color .2s ease;
+  transition: background-color .25s ease, color .25s ease;
 }
+body { font-family: var(--font-dm-sans), system-ui, sans-serif; }
 
-body {
-  font-family: var(--font-dm-sans), -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-/* ─── Scrollbars ────────────────────────────────────── */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--c-text-3); }
