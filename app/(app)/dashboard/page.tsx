@@ -21,11 +21,11 @@ function timeAgo(d: Date) {
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
-const STAGE_META: Record<string, { label: string; color: string; dot: string }> = {
-  QUALIFICATION: { label: "Qualification", color: "text-teal-bright",  dot: "#14b8a6" },
-  DEMO:          { label: "Démo",          color: "text-[#60a5fa]",    dot: "#3b82f6" },
-  PROPOSAL:      { label: "Proposition",   color: "text-[#c084fc]",    dot: "#a855f7" },
-  NEGOTIATION:   { label: "Négociation",   color: "text-[#fbbf24]",    dot: "#f59e0b" },
+const STAGE_META: Record<string, { label: string; color: string; dot: string; track: string }> = {
+  QUALIFICATION: { label: "Qualification", color: "text-teal-bright", dot: "#14b8a6", track: "rgba(20,184,166,.12)" },
+  DEMO:          { label: "Démo",          color: "text-[#60a5fa]",   dot: "#3b82f6", track: "rgba(59,130,246,.12)" },
+  PROPOSAL:      { label: "Proposition",   color: "text-[#c084fc]",   dot: "#a855f7", track: "rgba(168,85,247,.12)" },
+  NEGOTIATION:   { label: "Négociation",   color: "text-[#fbbf24]",   dot: "#f59e0b", track: "rgba(245,158,11,.12)" },
 };
 
 const ACTIVITY_ICON: Record<string, string> = {
@@ -100,38 +100,29 @@ export default async function DashboardPage() {
 
         {/* ── KPI Cards ─────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            index={1}
-            label="Entreprises"
-            value={String(totalCompanies)}
-            unit=""
+          <KpiCard index={1} label="Entreprises"
+            value={String(totalCompanies)} unit=""
             sub={`${byStatus.CLIENT??0} clients`}
             textColor="text-text-1"
+            accentColor="rgb(var(--rgb-border))"
           />
-          <KpiCard
-            index={2}
-            label="Pipeline total"
-            value={fmt(pipelineTotal)}
-            unit="€"
+          <KpiCard index={2} label="Pipeline total"
+            value={fmt(pipelineTotal)} unit="€"
             sub={`${deals.length} deals actifs`}
             textColor="text-teal"
+            accentColor="rgba(13,148,136,.30)"
           />
-          <KpiCard
-            index={3}
-            label="Pipeline pondéré"
-            value={fmt(Math.round(pipelineWeighted))}
-            unit="€"
+          <KpiCard index={3} label="Pipeline pondéré"
+            value={fmt(Math.round(pipelineWeighted))} unit="€"
             sub="Prob. de closing"
             textColor="text-[#60a5fa]"
-            highlight
+            accentColor="rgba(96,165,250,.30)"
           />
-          <KpiCard
-            index={4}
-            label="Taux conversion"
-            value={`${conversionRate}%`}
-            unit=""
+          <KpiCard index={4} label="Taux conversion"
+            value={`${conversionRate}%`} unit=""
             sub="Prospect → Client"
             textColor="text-gold"
+            accentColor="rgba(212,168,67,.30)"
           />
         </div>
 
@@ -141,27 +132,32 @@ export default async function DashboardPage() {
           {/* Funnel */}
           <Card>
             <CardHeader title="Funnel acquisition" />
-            <div className="space-y-3 mt-1">
-              {funnelStages.map(({ label, count, color }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <span className="w-[68px] text-[11px] font-medium text-text-3 shrink-0">{label}</span>
-                  <div className="flex-1 h-[6px] rounded-full overflow-hidden" style={{ background: "rgb(var(--rgb-border))" }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: count > 0 ? `${(count/maxFunnel)*100}%` : "3px",
-                        background: count > 0
-                          ? `linear-gradient(90deg, ${color}aa, ${color})`
-                          : color,
-                        minWidth: count > 0 ? "6px" : undefined,
-                      }}
-                    />
+            <div className="space-y-2.5 mt-2">
+              {funnelStages.map(({ label, count, color }, i) => {
+                const pct = count > 0 ? (count / maxFunnel) * 100 : 0;
+                const trackAlpha = "18";
+                return (
+                  <div key={label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-medium text-text-2">{label}</span>
+                      <span className="text-[12px] font-mono font-bold text-text-1">{count}</span>
+                    </div>
+                    <div className="h-2 rounded-full overflow-hidden"
+                      style={{ background: `${color}${trackAlpha}` }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: pct > 0 ? `${pct}%` : "8px",
+                          background: `linear-gradient(90deg, ${color}88, ${color})`,
+                          minWidth: "8px",
+                        }}
+                      />
+                    </div>
                   </div>
-                  <span className="w-5 text-right text-[12px] font-mono font-bold text-text-1 shrink-0">{count}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
-            <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgb(var(--rgb-border))" }}>
+            <div className="mt-4 pt-3" style={{ borderTop: "1px solid rgb(var(--rgb-border))" }}>
               <Link href="/comptes" className="text-[11px] text-teal font-semibold hover:text-teal-bright transition-colors">
                 Voir les comptes →
               </Link>
@@ -179,7 +175,8 @@ export default async function DashboardPage() {
                     style={{ borderBottom: "1px solid rgb(var(--rgb-border)/0.6)" }}>
                     <div className="flex items-center gap-2.5">
                       <span className="w-1.5 h-1.5 rounded-full flex-none" style={{ background: m.dot }} />
-                      <span className={`text-[12px] font-semibold ${m.color}`}>{m.label}</span>
+                      <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${m.color}`}
+                        style={{ background: m.track }}>{m.label}</span>
                       <span className="text-[11px] font-mono text-text-3">{count}</span>
                     </div>
                     <span className="text-[12px] font-mono font-bold text-text-1">
@@ -202,7 +199,15 @@ export default async function DashboardPage() {
             <CardHeader title="À traiter" action={{ label: "Tâches →", href: "/taches" }} />
             <div className="space-y-1 mt-1">
               {urgentTasks.length === 0 && (
-                <p className="text-[12px] text-text-3 text-center py-6">Aucune tâche urgente 🎉</p>
+                <div className="flex flex-col items-center py-7 gap-2">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: "var(--c-teal-bg)", border: "1px solid var(--c-teal-border)" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                  </div>
+                  <span className="text-[12px] text-text-3 font-medium">Tout est à jour</span>
+                </div>
               )}
               {urgentTasks.map(t => {
                 const due = fmtDue(t.dueAt);
@@ -303,29 +308,25 @@ function CardHeader({ title, action }: {
   );
 }
 
-function KpiCard({ index, label, value, unit, sub, textColor, highlight }: {
+function KpiCard({ index, label, value, unit, sub, textColor, accentColor }: {
   index: 1|2|3|4; label: string; value: string; unit: string;
-  sub: string; textColor: string; highlight?: boolean;
+  sub: string; textColor: string; accentColor: string;
 }) {
   return (
     <div
-      className="rounded-xl p-5 shadow-md relative overflow-hidden"
+      className="rounded-xl p-5 relative overflow-hidden"
       style={{
         background: `var(--kpi-${index})`,
-        border: highlight
-          ? "1px solid rgba(96,165,250,.35)"
-          : "1px solid rgb(var(--rgb-border))",
-        boxShadow: highlight
-          ? "0 0 0 1px rgba(96,165,250,.15), var(--shadow-md)"
-          : "var(--shadow)",
+        border: `1px solid ${accentColor}`,
+        boxShadow: "var(--shadow)",
       }}
     >
       <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-text-3 mb-3">{label}</div>
       <div className={`text-[30px] font-extrabold font-mono leading-none ${textColor} flex items-end gap-1`}>
         {value}
-        {unit && <span className="text-[18px] font-bold mb-0.5 opacity-80">{unit}</span>}
+        {unit && <span className="text-[20px] font-bold mb-0.5 opacity-75">{unit}</span>}
       </div>
-      <div className="mt-2 text-[11px] text-text-3">{sub}</div>
+      <div className="mt-2 text-[12px] text-text-3">{sub}</div>
     </div>
   );
 }

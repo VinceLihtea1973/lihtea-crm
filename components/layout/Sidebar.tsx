@@ -76,19 +76,16 @@ export function Sidebar({ userName }: { userName: string }) {
                   key={item.href}
                   href={item.href as never}
                   className={cn(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-medium transition-all duration-150 mb-0.5",
+                    "flex items-center gap-2.5 py-[7px] text-[12.5px] font-medium transition-all duration-150 mb-px rounded-r-lg",
                     active
-                      ? "bg-white/[0.10] text-white font-semibold"
-                      : "text-white/40 hover:text-white/80 hover:bg-white/[0.05]"
+                      ? "pl-[10px] pr-3 text-white font-semibold border-l-[3px] border-teal-bright bg-white/[0.06]"
+                      : "pl-3 pr-3 text-white/40 hover:text-white/75 hover:bg-white/[0.04] border-l-[3px] border-transparent"
                   )}
                 >
                   <span className={cn("flex-none", active ? "text-teal-bright" : "")}>
                     {item.icon}
                   </span>
                   {item.label}
-                  {active && (
-                    <span className="ml-auto w-1 h-4 rounded-full bg-teal-bright" />
-                  )}
                 </Link>
               );
             })}
