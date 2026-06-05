@@ -54,11 +54,10 @@ export function Sidebar({ userName }: { userName: string }) {
       className="w-[220px] flex-none flex flex-col relative border-r h-screen"
       style={{ background: "#ffffff", borderColor: "rgb(var(--rgb-border))" }}
     >
-      <div className="px-4 flex items-center gap-3 border-b h-10 flex-none" style={{ borderColor: "rgb(var(--rgb-border))" }}>
-        <div className="w-8 h-8 rounded-lg bg-teal flex items-center justify-center font-black text-white text-[14px] shadow-[0_4px_12px_rgba(13,148,136,.3)] flex-none">L</div>
+      <div className="px-4 flex items-center gap-3 h-10 flex-none" style={{ background: "#0f2342" }}>
+        <div className="w-6 h-6 rounded-md bg-teal flex items-center justify-center font-black text-white text-[12px] flex-none">L</div>
         <div>
-          <div className="text-navy text-[14px] font-extrabold tracking-tight leading-tight">Lihtea</div>
-          <div className="text-[10px] text-text-3 font-medium">Plateforme commerciale</div>
+          <div className="text-white text-[13px] font-extrabold tracking-tight leading-tight">Lihtea</div>
         </div>
       </div>
 
