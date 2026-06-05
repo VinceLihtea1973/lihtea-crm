@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type NavItem = { href: string; label: string; icon: React.ReactNode };
 type NavGroup = { label: string; items: NavItem[] };
@@ -87,10 +86,6 @@ export function Sidebar({ userName }: { userName: string }) {
             })}
           </div>
         ))}
-      </div>
-
-      <div className="px-3 py-2 border-t" style={{ borderColor: "rgb(var(--rgb-border))" }}>
-        <ThemeToggle />
       </div>
 
       <div className="px-3 py-3 border-t flex items-center gap-2.5" style={{ borderColor: "rgb(var(--rgb-border))" }}>
