@@ -4,12 +4,10 @@ import "./globals.css";
 
 const sora = Sora({
   subsets: ["latin"],
-  weight: ["300","400","500","600","700","800"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   variable: "--font-sora",
   display: "swap",
 });
-
-const jetbrainsMono = JetBrains_Mono({
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -17,8 +15,9 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
+
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["300","400","500","600","700","800"],
   variable: "--font-jetbrains",
   display: "swap",
 });
@@ -32,7 +31,6 @@ export const metadata: Metadata = {
     "Plateforme commerciale Lihtea : prospection, CRM, séquences, simulateur.",
 };
 
-/* Script inline exécuté AVANT le rendu — évite le flash de thème */
 const themeScript = `
 (function() {
   try {
@@ -54,10 +52,9 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${sora.variable} ${jakarta.variable} ${jetbrainsMono.variable} ${jetbrainsMono.variable}`}
+      className={`${sora.variable} ${jakarta.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
-      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
