@@ -41,7 +41,6 @@ const GROUPS: NavGroup[] = [
   ]},
   { label: "Compte", items: [
     { href: "/parametres", label: "Paramètres", icon: Icon.settings },
-    { href: "/aide", label: "Aide", icon: Icon.help },
   ]},
 ];
 
