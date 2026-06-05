@@ -52,7 +52,7 @@ export function Sidebar({ userName }: { userName: string }) {
 
   return (
     <nav
-      className="w-[220px] flex-none flex flex-col overflow-hidden relative border-r"
+      className="w-[220px] flex-none flex flex-col relative border-r h-screen"
       style={{ background: "#ffffff", borderColor: "rgb(var(--rgb-border))" }}
     >
       <div className="px-4 pt-5 pb-4 flex items-center gap-3 border-b" style={{ borderColor: "rgb(var(--rgb-border))" }}>
@@ -63,9 +63,9 @@ export function Sidebar({ userName }: { userName: string }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3">
+      <div className="flex-1 overflow-y-auto px-3 py-2 min-h-0">
         {GROUPS.map((group) => (
-          <div key={group.label} className="mb-4">
+          <div key={group.label} className="mb-2">
             <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-text-3 px-2 pb-1.5">
               — {group.label}
             </div>
