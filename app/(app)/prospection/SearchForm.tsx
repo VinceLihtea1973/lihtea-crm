@@ -1359,13 +1359,7 @@ function DatagouvSearch() {
           >
             📥 Excel (page)
           </button>
-          <button
-            type="button"
-            onClick={exportAllPages}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal/40 bg-teal/5 text-[12px] font-semibold text-teal hover:bg-teal/10 transition-colors"
-          >
-            📥 Export toutes pages
-          </button>
+
           {result.results.some((r) => !r.alreadyImported) && (
             <button
               type="button"
