@@ -792,6 +792,46 @@ function InseeSearch() {
 
 
 
+
+  async function exportAllPages() {
+    if (!result) return;
+    const allRows: string[][] = [];
+    const headers = ["SIREN","Nom","Forme juridique","Code APE","Région","Département","Ville","Effectif","Date création","ICP Score"];
+    
+    // Page courante
+    for (const r of result.results) {
+      allRows.push([
+        r.siren, r.name, r.legalForm ?? "", r.apeCode ?? "",
+        r.region ?? "", r.department ?? "", r.city ?? "",
+        r.headcountBand ?? "", r.creationDate ?? "", String(r.icpScore ?? ""),
+      ]);
+    }
+    
+    // Pages suivantes
+    const totalPages = Math.ceil((result.total ?? 0) / 25);
+    for (let p = 2; p <= Math.min(totalPages, 40); p++) {
+      try {
+        const r = await searchSireneAction({
+          query: query || undefined,
+          apeBuckets: secteurs.length ? secteurs : undefined,
+          apeCodes: apeCodes.length ? apeCodes : undefined,
+          headcountBands: tailles.length ? tailles : undefined,
+          regions: regions.length ? regions : undefined,
+          page: p,
+        });
+        for (const row of r.results) {
+          allRows.push([
+            row.siren, row.name, row.legalForm ?? "", row.apeCode ?? "",
+            row.region ?? "", row.department ?? "", row.city ?? "",
+            row.headcountBand ?? "", row.creationDate ?? "", String(row.icpScore ?? ""),
+          ]);
+        }
+      } catch { break; }
+    }
+    
+    downloadCSV(`prospection-complet-${new Date().toISOString().slice(0,10)}.csv`, allRows, headers);
+  }
+
   async function importOne(siren: string) {
     if (!result) return;
     const r = result.results.find((x) => x.siren === siren);
@@ -1045,45 +1085,6 @@ function DirectorSearch() {
     });
   }
 
-
-  async function exportAllPages() {
-    if (!result) return;
-    const allRows: string[][] = [];
-    const headers = ["SIREN","Nom","Forme juridique","Code APE","Région","Département","Ville","Effectif","Date création","ICP Score"];
-    
-    // Page courante
-    for (const r of result.results) {
-      allRows.push([
-        r.siren, r.name, r.legalForm ?? "", r.apeCode ?? "",
-        r.region ?? "", r.department ?? "", r.city ?? "",
-        r.headcountBand ?? "", r.creationDate ?? "", String(r.icpScore ?? ""),
-      ]);
-    }
-    
-    // Pages suivantes
-    const totalPages = Math.ceil((result.total ?? 0) / 25);
-    for (let p = 2; p <= Math.min(totalPages, 40); p++) {
-      try {
-        const r = await searchSireneAction({
-          query: query || undefined,
-          apeBuckets: secteurs.length ? secteurs : undefined,
-          apeCodes: apeCodes.length ? apeCodes : undefined,
-          headcountBands: tailles.length ? tailles : undefined,
-          regions: regions.length ? regions : undefined,
-          page: p,
-        });
-        for (const row of r.results) {
-          allRows.push([
-            row.siren, row.name, row.legalForm ?? "", row.apeCode ?? "",
-            row.region ?? "", row.department ?? "", row.city ?? "",
-            row.headcountBand ?? "", row.creationDate ?? "", String(row.icpScore ?? ""),
-          ]);
-        }
-      } catch { break; }
-    }
-    
-    downloadCSV(`prospection-complet-${new Date().toISOString().slice(0,10)}.csv`, allRows, headers);
-  }
 
   async function importOne(siren: string) {
     setImporting(siren);
