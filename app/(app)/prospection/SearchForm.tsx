@@ -696,14 +696,19 @@ function InseeSearch() {
   useEffect(() => { ssSave(INSEE_KEY + "_hi",       hideImported); }, [hideImported]);
 
   const rawResults = result?.results ?? [];
-  const displayResults = rawResults.filter(r => {
-    if (hideImported && r.alreadyImported) return false;
-    if (departments.length > 0 && !departments.includes(r.department ?? "")) return false;
-    if (legalForms.length > 0) {
-      const lf = (r.legalForm ?? "").toUpperCase();
-      const match = legalForms.some(f => lf.includes(f));
-      if (!match) return false;
-    }
+  const displayResults = rawResults.filter((r: Record<string, unknown> & typeof r) => {
+    try {
+      if (hideImported && r.alreadyImported) return false;
+      if (departments.length > 0) {
+        const dep = (r as unknown as {department?: string | null}).department ?? "";
+        if (!departments.includes(dep)) return false;
+      }
+      if (legalForms.length > 0) {
+        const lf = ((r as unknown as {legalForm?: string | null}).legalForm ?? "").toUpperCase();
+        const match = legalForms.some((f: string) => lf.includes(f));
+        if (!match) return false;
+      }
+    } catch { return true; }
     return true;
   });
 
