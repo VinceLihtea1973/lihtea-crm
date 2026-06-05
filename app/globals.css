@@ -24,7 +24,7 @@
 :root, [data-theme="light"] {
   color-scheme: light;
 
-  --rgb-bg:            241 245 249;
+  --rgb-bg: 250 248 245;
   --rgb-surface:       255 255 255;
   --rgb-surface-2:     248 250 252;
   --rgb-border:        217 226 238;
@@ -33,7 +33,7 @@
   --rgb-text-2:        71  85  105;
   --rgb-text-3:        120 136 158;
 
-  --c-bg:            rgb(241 245 249);
+  --c-bg: rgb(250 248 245);
   --c-surface:       rgb(255 255 255);
   --c-border:        rgb(217 226 238);
   --c-text:          rgb(15 23 42);
