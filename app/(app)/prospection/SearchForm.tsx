@@ -678,6 +678,9 @@ function InseeSearch() {
   const [importingAll, setImportingAll] = useState(false);
   const [importedIds,  setImportedIds] = useState<Record<string, string>>(() => ssGet(INSEE_KEY + "_ids", {}));
   const [saveOpen,     setSaveOpen]    = useState(false);
+  const [departments,  setDepartments] = useState<string[]>(() => ssGet(INSEE_KEY + "_deps", []));
+  const [legalForms,   setLegalForms]  = useState<string[]>(() => ssGet(INSEE_KEY + "_lf", []));
+  const [hideImported, setHideImported] = useState<boolean>(() => ssGet(INSEE_KEY + "_hi", false));
 
   // Persist state across navigations
   useEffect(() => { ssSave(INSEE_KEY + "_q",       query);      }, [query]);
@@ -688,15 +691,55 @@ function InseeSearch() {
   useEffect(() => { ssSave(INSEE_KEY + "_page",     page);      }, [page]);
   useEffect(() => { ssSave(INSEE_KEY + "_result",   result);    }, [result]);
   useEffect(() => { ssSave(INSEE_KEY + "_ids",      importedIds); }, [importedIds]);
+  useEffect(() => { ssSave(INSEE_KEY + "_deps",     departments);  }, [departments]);
+  useEffect(() => { ssSave(INSEE_KEY + "_lf",       legalForms);   }, [legalForms]);
+  useEffect(() => { ssSave(INSEE_KEY + "_hi",       hideImported); }, [hideImported]);
 
-  const hasFilters = secteurs.length > 0 || regions.length > 0 || tailles.length > 0 || apeCodes.length > 0 || query.trim().length > 0;
+  const rawResults = result?.results ?? [];
+  const displayResults = rawResults.filter(r => {
+    if (hideImported && r.alreadyImported) return false;
+    if (departments.length > 0 && !departments.includes(r.department ?? "")) return false;
+    if (legalForms.length > 0) {
+      const lf = (r.legalForm ?? "").toUpperCase();
+      const match = legalForms.some(f => lf.includes(f));
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = secteurs.length > 0 || regions.length > 0 || tailles.length > 0 || apeCodes.length > 0 || departments.length > 0 || legalForms.length > 0 || query.trim().length > 0;
+
+  const FORMES_JURIDIQUES = [
+    { value: "SAS", label: "SAS" },
+    { value: "SARL", label: "SARL" },
+    { value: "SA", label: "SA" },
+    { value: "EURL", label: "EURL" },
+    { value: "SCI", label: "SCI" },
+    { value: "SNC", label: "SNC" },
+    { value: "SASU", label: "SASU" },
+    { value: "EI", label: "Entreprise individuelle" },
+    { value: "ASSOCIATION", label: "Association" },
+  ];
+
+  const DEPARTMENTS = [
+    "01","02","03","04","05","06","07","08","09","10",
+    "11","12","13","14","15","16","17","18","19","21",
+    "22","23","24","25","26","27","28","29","2A","2B",
+    "30","31","32","33","34","35","36","37","38","39",
+    "40","41","42","43","44","45","46","47","48","49",
+    "50","51","52","53","54","55","56","57","58","59",
+    "60","61","62","63","64","65","66","67","68","69",
+    "70","71","72","73","74","75","76","77","78","79",
+    "80","81","82","83","84","85","86","87","88","89",
+    "90","91","92","93","94","95","971","972","973","974","976",
+  ];
 
   function handleReset() {
     setQuery(""); setSecteurs([]); setRegions([]); setTailles([]); setApeCodes([]);
-    setPage(1); setResult(null); setError(null); setImportedIds({});
+    setPage(1); setResult(null); setError(null); setImportedIds({}); setDepartments([]); setLegalForms([]); setHideImported(false);
     [INSEE_KEY + "_q", INSEE_KEY + "_secteurs", INSEE_KEY + "_regions",
      INSEE_KEY + "_tailles", INSEE_KEY + "_ape", INSEE_KEY + "_page",
-     INSEE_KEY + "_result", INSEE_KEY + "_ids"].forEach((k) => sessionStorage.removeItem(k));
+     INSEE_KEY + "_result", INSEE_KEY + "_ids", INSEE_KEY + "_deps", INSEE_KEY + "_lf", INSEE_KEY + "_hi"].forEach((k) => sessionStorage.removeItem(k));
   }
 
   async function importAll() {
@@ -823,6 +866,22 @@ function InseeSearch() {
             selected={tailles}
             onChange={setTailles}
           />
+          <MultiSelect
+            label="Département"
+            options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
+            selected={departments}
+            onChange={setDepartments}
+          />
+          <MultiSelect
+            label="Forme juridique"
+            options={FORMES_JURIDIQUES}
+            selected={legalForms}
+            onChange={setLegalForms}
+          />
+          <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface text-[12px] font-medium text-text-2 cursor-pointer hover:bg-bg transition-colors">
+            <input type="checkbox" checked={hideImported} onChange={e => setHideImported(e.target.checked)} className="w-3.5 h-3.5 rounded accent-teal" />
+            Masquer importés
+          </label>
           {hasFilters && result && result.total > 0 && (
             <button
               type="button"
