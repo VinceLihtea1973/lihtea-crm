@@ -38,7 +38,8 @@ const config: Config = {
         "text-3":        "rgb(var(--rgb-text-3) / <alpha-value>)",
       },
       fontFamily: {
-        body: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+        body: ["var(--font-jakarta)", "system-ui", "sans-serif"],
+      heading: ["var(--font-sora)", "system-ui", "sans-serif"],
         mono: ["var(--font-jetbrains)", "SF Mono", "monospace"],
       },
       borderRadius: { DEFAULT: "12px", sm: "8px" },

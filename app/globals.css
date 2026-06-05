@@ -124,3 +124,13 @@ body { font-family: var(--font-dm-sans), system-ui, sans-serif; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--c-text-3); }
+
+/* ── Typography Sora + Jakarta ───────────────────────── */
+body {
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+h1, h2, h3, h4, h5, h6,
+.font-heading, .kpi-value {
+  font-family: var(--font-sora), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}

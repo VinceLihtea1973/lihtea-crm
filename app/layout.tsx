@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
-import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Sora, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const sora = Sora({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  weight: ["300","400","500","600","700","800"],
+  variable: "--font-sora",
   display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
+
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
+  variable: "--font-jakarta",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+  subsets: ["latin"],
+  weight: ["300","400","500","600","700","800"],
   variable: "--font-jetbrains",
   display: "swap",
 });
@@ -45,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${dmSans.variable} ${jetbrainsMono.variable}`}
+      className={`${sora.variable} ${jakarta.variable} ${jetbrainsMono.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
