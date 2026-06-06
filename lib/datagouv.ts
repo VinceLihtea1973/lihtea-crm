@@ -81,13 +81,17 @@ function mapRechercheEntreprise(r: any): DatagouvCompany {
 }
 
 /** Normalise un code APE : "7111z" | "71.11z" → "71.11Z" */
+/** Normalise un code APE : "7111z" | "71.11z" | "71.11.Z" → "71.11Z" */
 function normalizeApe(raw: string): string {
-  const up = raw.toUpperCase().replace(/\s/g, "");
-  return up.length === 5 && !up.includes(".") ? `${up.slice(0, 2)}.${up.slice(2)}` : up;
+  const cleaned = raw.replace(/[\s.]/g, "").toUpperCase();
+  return /^\d{4}[A-Z]$/i.test(cleaned)
+    ? `${cleaned.slice(0, 2)}.${cleaned.slice(2)}`
+    : raw.toUpperCase().trim();
 }
 
+/** Reconnaît un code APE quelle que soit la ponctuation : 46.52Z, 4652Z, 46.52.Z */
 function isApeCode(s: string): boolean {
-  return /^\d{2}\.?\d{2}[A-Z]$/i.test(s.replace(/\s/g, ""));
+  return /^\d{4}[A-Z]$/i.test(s.replace(/[\s.]/g, ""));
 }
 
 const DATAGOUV_SEARCH = "https://recherche-entreprises.api.gouv.fr/search";
