@@ -172,18 +172,17 @@ function mapEtablissement(raw: RawEtablissement): SireneCompany {
  * Construit le paramètre `q` de l'API INSEE.
  * Doc : https://api.insee.fr/catalogue/site/themes/wso2/subthemes/insee/pages/item-info.jag?name=Sirene&version=V3.11
  */
-/** Normalise un code APE saisi : "7111z" | "71.11z" | "71.11Z" → "71.11Z" */
+/** Normalise un code APE : "7111z" | "71.11z" | "71.11.Z" → "71.11Z" */
 function normalizeApe(raw: string): string {
-  const up = raw.toUpperCase().replace(/\s/g, "");
-  if (up.length === 5 && !up.includes(".")) {
-    return `${up.slice(0, 2)}.${up.slice(2)}`;
-  }
-  return up;
+  const cleaned = raw.replace(/[\s.]/g, "").toUpperCase();
+  return /^\d{4}[A-Z]$/i.test(cleaned)
+    ? `${cleaned.slice(0, 2)}.${cleaned.slice(2)}`
+    : raw.toUpperCase().trim();
 }
 
-/** Vérifie si la chaîne ressemble à un code APE/NAF : 5 car. + lettre finale */
+/** Reconnaît un code APE quelle que soit la ponctuation : 46.52Z, 4652Z, 46.52.Z */
 function isApeCode(s: string): boolean {
-  return /^\d{2}\.?\d{2}[A-Z]$/i.test(s.replace(/\s/g, ""));
+  return /^\d{4}[A-Z]$/i.test(s.replace(/[\s.]/g, ""));
 }
 
 function buildQuery(input: SireneSearchInput): string {
