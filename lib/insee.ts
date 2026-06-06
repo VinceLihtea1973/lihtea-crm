@@ -31,6 +31,7 @@ export type SireneSearchInput = {
   apeCodes?:      string[];        // ["5510Z", "4711D"]  - filtre côté API
   headcountBands?: string[];       // ["50-249", "1000+"]
   regions?:       string[];        // ["Île-de-France"…]
+  departments?:    string[];        // ["75","69"…]
   page?:          number;          // 1-based
   pageSize?:      number;          // défaut 20, max 100
 };
@@ -168,6 +169,39 @@ function mapEtablissement(raw: RawEtablissement): SireneCompany {
 
 // ─── Construction de la query INSEE ───────────────────────────────
 
+// ─── Mappings filtres → champs Lucene ───────────────────────────────────────
+
+/** Tranche effectif interne → codes INSEE trancheEffectifsUniteLegale */
+const BAND_TO_INSEE: Record<string, string[]> = {
+  "1-9":    ["00","01","02","03"],
+  "10-49":  ["11","12"],
+  "50-249": ["21","22","31"],
+  "250-999":["32","41"],
+  "1000+":  ["42","51","52","53"],
+};
+
+/** Région (libellé) → liste de codes départements INSEE */
+const REGION_DEPTS: Record<string, string[]> = {
+  "Île-de-France":              ["75","77","78","91","92","93","94","95"],
+  "Auvergne-Rhône-Alpes":       ["01","03","07","15","26","38","42","43","63","69","73","74"],
+  "Nouvelle-Aquitaine":         ["16","17","19","23","24","33","40","47","64","79","86","87"],
+  "Occitanie":                  ["09","11","12","30","31","32","34","46","48","65","66","81","82"],
+  "Hauts-de-France":            ["02","59","60","62","80"],
+  "Grand Est":                  ["08","10","51","52","54","55","57","67","68","88"],
+  "Provence-Alpes-Côte d'Azur": ["04","05","06","13","83","84"],
+  "Pays de la Loire":           ["44","49","53","72","85"],
+  "Normandie":                  ["14","27","50","61","76"],
+  "Bretagne":                   ["22","29","35","56"],
+  "Bourgogne-Franche-Comté":    ["21","25","39","58","70","71","89","90"],
+  "Centre-Val de Loire":        ["18","28","36","37","41","45"],
+  "Corse":                      ["2A","2B"],
+  "La Réunion":                 ["974"],
+  "Martinique":                 ["972"],
+  "Guadeloupe":                 ["971"],
+  "Guyane":                     ["973"],
+  "Mayotte":                    ["976"],
+};
+
 /**
  * Construit le paramètre `q` de l'API INSEE.
  * Doc : https://api.insee.fr/catalogue/site/themes/wso2/subthemes/insee/pages/item-info.jag?name=Sirene&version=V3.11
@@ -212,6 +246,19 @@ function buildQuery(input: SireneSearchInput): string {
   if (input.apeCodes?.length) {
     const apes = input.apeCodes.map((c) => `"${c}"`).join(" OR ");
     parts.push(`activitePrincipaleUniteLegale:(${apes})`);
+
+  // Taille effectifs → server-side (trancheEffectifsUniteLegale)
+  if (input.headcountBands?.length) {
+    const codes = input.headcountBands.flatMap(b => BAND_TO_INSEE[b] ?? []);
+    if (codes.length) parts.push(`trancheEffectifsUniteLegale:(${codes.map(c => '"' + c + '"').join(" OR ")})`);
+  }
+
+  // Régions + Départements → server-side (departementEtablissement)
+  const allDepts = [...(input.regions ?? []).flatMap(r => REGION_DEPTS[r] ?? []), ...(input.departments ?? [])];
+  if (allDepts.length) {
+    const unique = [...new Set(allDepts)];
+    parts.push(`departementEtablissement:(${unique.map(d => '"' + d + '"').join(" OR ")})`);
+  }
   }
 
   // Filtres "états administratif actif" + "siège uniquement"
@@ -256,17 +303,7 @@ async function searchInseeLive(input: SireneSearchInput): Promise<SireneSearchRe
 
   let results = data.etablissements.map(mapEtablissement);
 
-  // Filtres post-API (que l'INSEE n'expose pas directement)
-  if (input.headcountBands?.length) {
-    results = results.filter(
-      (r) => r.headcountBand && input.headcountBands!.includes(r.headcountBand)
-    );
-  }
-  if (input.regions?.length) {
-    results = results.filter(
-      (r) => r.region && input.regions!.includes(r.region)
-    );
-  }
+  // Filtre post-API apeBuckets uniquement (les autres sont server-side via buildQuery)
   if (input.apeBuckets?.length) {
     results = results.filter(
       (r) => r.nafBucket && input.apeBuckets!.includes(r.nafBucket)
