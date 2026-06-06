@@ -1561,7 +1561,7 @@ function DatagouvSearch() {
             disabled={exportingAll}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal/40 bg-teal/5 text-[12px] font-semibold text-teal hover:bg-teal/10 disabled:opacity-50 transition-colors"
           >
-            {exportProgress ? `⏳ ${exportProgress.page}/${exportProgress.totalPages} pages…` : exportingAll ? "Finalisation…" : "📥 Export toutes pages"
+            {exportProgress ? `⏳ ${exportProgress.page}/${exportProgress.totalPages} pages…` : exportingAll ? "Finalisation…" : "📥 Export toutes pages"}
           </button>
 
           {result.results.some((r) => !r.alreadyImported) && (
