@@ -602,16 +602,19 @@ function SaveListModal({
 
 // ─── Export CSV ───────────────────────────────────────────────────
 
-function downloadCSV(filename: string, rows: string[][], headers: string[]) {
-  const escape = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
-  const lines = [headers, ...rows].map((r) => r.map(escape).join(";")).join("\r\n");
-  const blob = new Blob(["﻿" + lines], { type: "text/csv;charset=utf-8;" });
+function downloadExcel(filename: string, rows: string[][], headers: string[]) {
+  const esc = (v: string) => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const toRow = (cells: string[]) => "<tr>" + cells.map(c => `<td>${esc(c)}</td>`).join("") + "</tr>";
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Export</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>${toRow(headers)}${rows.map(toRow).join("")}</table></body></html>`;
+  const blob = new Blob(["﻿" + html], { type: "application/vnd.ms-excel;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
+  a.href = url; a.download = filename.replace(/\.csv$/, ".xls"); a.click();
   URL.revokeObjectURL(url);
 }
-
+function downloadCSV(filename: string, rows: string[][], headers: string[]) {
+  downloadExcel(filename, rows, headers);
+}
 // ─── Session storage helpers ──────────────────────────────────────
 
 function ssGet<T>(key: string, fallback: T): T {
@@ -677,6 +680,7 @@ function InseeSearch() {
   const [importing,    setImporting]   = useState<string | null>(null);
   const [importingAll, setImportingAll] = useState(false);
   const [importProgress, setImportProgress] = useState<{page:number;totalPages:number;count:number}|null>(null);
+  const [exportProgress, setExportProgress] = useState<{page:number;totalPages:number}|null>(null);
   const [importedIds,  setImportedIds] = useState<Record<string, string>>(() => ssGet(INSEE_KEY + "_ids", {}));
   const [saveOpen,     setSaveOpen]    = useState(false);
   const [departments,  setDepartments] = useState<string[]>(() => ssGet(INSEE_KEY + "_deps", []));
@@ -840,43 +844,41 @@ function InseeSearch() {
 
   async function exportAllPages() {
     if (!result) return;
+    const fmtDate = (d: unknown) => {
+      if (!d) return "";
+      if (d instanceof Date) return d.toLocaleDateString("fr-FR");
+      return String(d).slice(0,10);
+    };
+    const ps = result.pageSize ?? 20;
+    const totalPages = Math.min(40, Math.ceil((result.total ?? 0) / ps));
+    setExportProgress({ page: 1, totalPages });
+    const headers = ["SIREN","Raison sociale","Forme juridique","Code APE","Région","Département","Ville","Effectifs","Date création","Score ICP"];
     const allRows: string[][] = [];
-    const headers = ["SIREN","Nom","Forme juridique","Code APE","Région","Département","Ville","Effectif","Date création","ICP Score"];
-    
-    // Page courante
-    for (const r of result.results) {
-      allRows.push([
-        r.siren, r.name, r.legalForm ?? "", r.apeCode ?? "",
-        r.region ?? "", r.department ?? "", r.city ?? "",
-        r.headcountBand ?? "", r.creationDate ?? "", String(r.icpScore ?? ""),
-      ]);
-    }
-    
-    // Pages suivantes
-    const totalPages = Math.ceil((result.total ?? 0) / (result.pageSize ?? 20));
-    for (let p = 2; p <= Math.min(totalPages, 40); p++) {
+    const pushRow = (r: typeof result.results[0]) => allRows.push([
+      r.siren, r.name, r.legalForm ?? "", r.apeCode ?? "",
+      r.region ?? "", r.department ?? "", r.city ?? "",
+      r.headcountBand ?? "", fmtDate(r.creationDate), String(r.icpScore ?? ""),
+    ]);
+    result.results.forEach(pushRow);
+    for (let p = 2; p <= totalPages; p++) {
+      setExportProgress({ page: p, totalPages });
       try {
         const r = await searchSireneAction({
           query: query || undefined,
-          apeBuckets: secteurs.length ? secteurs : undefined,
-          apeCodes: apeCodes.length ? apeCodes : undefined,
-          headcountBands: tailles.length ? tailles : undefined,
-          regions:     regions.length     ? regions     : undefined,
-          departments: departments.length ? departments : undefined,
+          apeBuckets:    secteurs.length    ? secteurs    : undefined,
+          apeCodes:      apeCodes.length    ? apeCodes    : undefined,
+          headcountBands:tailles.length     ? tailles     : undefined,
+          regions:       regions.length     ? regions     : undefined,
+          departments:   departments.length ? departments : undefined,
           page: p,
         });
-        for (const row of r.results) {
-          allRows.push([
-            row.siren, row.name, row.legalForm ?? "", row.apeCode ?? "",
-            row.region ?? "", row.department ?? "", row.city ?? "",
-            row.headcountBand ?? "", row.creationDate ?? "", String(row.icpScore ?? ""),
-          ]);
-        }
+        r.results.forEach(pushRow);
       } catch { break; }
     }
-    
-    downloadCSV(`prospection-complet-${new Date().toISOString().slice(0,10)}.csv`, allRows, headers);
+    setExportProgress(null);
+    downloadExcel(`prospection-insee-${new Date().toISOString().slice(0,10)}.xls`, allRows, headers);
   }
+
 
   async function importOne(siren: string) {
     if (!result) return;
@@ -1040,9 +1042,10 @@ function InseeSearch() {
           <button
             type="button"
             onClick={exportAllPages}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal/40 bg-teal/5 text-[12px] font-semibold text-teal hover:bg-teal/10 transition-colors"
+            disabled={!!exportProgress}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal/40 bg-teal/5 text-[12px] font-semibold text-teal hover:bg-teal/10 disabled:opacity-60 transition-colors"
           >
-            📥 Export toutes pages
+            {exportProgress ? `⏳ ${exportProgress.page}/${exportProgress.totalPages} pages…` : "📥 Export toutes pages"}
           </button>
           {result.results.some((r) => !r.alreadyImported) && (
             <div className="ml-auto flex items-center gap-2">
@@ -1297,6 +1300,7 @@ function DatagouvSearch() {
   const [importing,    setImporting]    = useState<string | null>(null);
   const [importingAll, setImportingAll] = useState(false);
   const [exportingAll, setExportingAll] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{page:number;totalPages:number}|null>(null);
   const [importProgress, setImportProgress] = useState<{page:number;totalPages:number;count:number}|null>(null);
   const [regions,      setRegions]      = useState<string[]>(() => ssGet(DG_KEY + "_regions", []));
   const [tailles,      setTailles]      = useState<string[]>(() => ssGet(DG_KEY + "_tailles", []));
@@ -1444,34 +1448,37 @@ function DatagouvSearch() {
     setImportProgress(null);
   }
 
-    async function exportAllPages() {
+  async function exportAllPages() {
     if (!result) return;
+    const totalPages = Math.min(40, Math.ceil((result.total ?? 0) / 20));
     setExportingAll(true);
+    setExportProgress({ page: 1, totalPages });
+    const headers = ["Raison sociale","SIREN","Forme juridique","Code APE","Région","Département","Ville","Effectifs","Dirigeants","ICP Score","Statut"];
     const allRows: string[][] = [];
-    const headers = ["Raison sociale","SIREN","Forme juridique","Code APE","R\u00e9gion","Ville","Effectifs","Dirigeants","ICP Score","Statut"];
-    for (const r of result.results) {
-      allRows.push([r.name, r.siren, r.legalForm ?? "", r.apeCode ?? "", r.region ?? "", r.city ?? "", r.headcountBand ?? "",
-        r.dirigeants?.slice(0,3).map((d) => [d.prenom, d.nom].filter(Boolean).join(" ")).join(", ") ?? "",
-        String(r.icpScore ?? ""), r.alreadyImported ? "Import\u00e9" : "Non import\u00e9"]);
-    }
-    const totalPages = Math.ceil((result.total ?? 0) / 20);
-    for (let p = 2; p <= Math.min(totalPages, 40); p++) {
+    const pushRow = (r: (typeof result.results)[0]) => allRows.push([
+      r.name, r.siren, r.legalForm ?? "", r.apeCode ?? "",
+      r.region ?? "", r.department ?? "", r.city ?? "", r.headcountBand ?? "",
+      r.dirigeants?.slice(0,3).map(d => [d.prenom,d.nom].filter(Boolean).join(" ")).join(", ") ?? "",
+      String(r.icpScore ?? ""), r.alreadyImported ? "Importé" : "Non importé",
+    ]);
+    result.results.forEach(pushRow);
+    for (let p = 2; p <= totalPages; p++) {
+      setExportProgress({ page: p, totalPages });
       try {
         const r = await searchDatagouvAction({ query, page: p,
-            departments: departments.length ? departments : undefined,
-            regions: regions.length ? regions : undefined,
-            headcountBand: tailles.length===1 ? tailles[0] : undefined,
-          });
-        for (const row of r.results) {
-          allRows.push([row.name, row.siren, row.legalForm ?? "", row.apeCode ?? "", row.region ?? "", row.city ?? "", row.headcountBand ?? "",
-            row.dirigeants?.slice(0,3).map((d) => [d.prenom, d.nom].filter(Boolean).join(" ")).join(", ") ?? "",
-            String(row.icpScore ?? ""), row.alreadyImported ? "Import\u00e9" : "Non import\u00e9"]);
-        }
+          departments: departments.length ? departments : undefined,
+          regions: regions.length ? regions : undefined,
+          headcountBand: tailles.length===1 ? tailles[0] : undefined,
+        });
+        r.results.forEach(pushRow);
       } catch { break; }
     }
-    downloadCSV(`prospection-datagouv-complet-${new Date().toISOString().slice(0,10)}.csv`, allRows, headers);
+    setExportProgress(null);
     setExportingAll(false);
+    downloadExcel(`prospection-datagouv-${new Date().toISOString().slice(0,10)}.xls`, allRows, headers);
   }
+
+
 
   return (
     <div>
@@ -1554,7 +1561,7 @@ function DatagouvSearch() {
             disabled={exportingAll}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal/40 bg-teal/5 text-[12px] font-semibold text-teal hover:bg-teal/10 disabled:opacity-50 transition-colors"
           >
-            {exportingAll ? "Export en cours\u2026" : "\uD83D\uDCE5 Export toutes pages"}
+            {exportProgress ? `⏳ ${exportProgress.page}/${exportProgress.totalPages} pages…` : exportingAll ? "Finalisation…" : "📥 Export toutes pages"
           </button>
 
           {result.results.some((r) => !r.alreadyImported) && (
