@@ -10,6 +10,7 @@ import {
   fetchBodaccBySiren,
   type DatagouvCompany,
   type BodaccSignal,
+  type DgFilters,
 } from "@/lib/datagouv";
 import { calculateIcp } from "@/lib/icp";
 import { CompanySource } from "@prisma/client";
@@ -17,9 +18,12 @@ import { CompanySource } from "@prisma/client";
 // ─── Recherche entreprises ────────────────────────────────────────
 
 const SearchSchema = z.object({
-  query:    z.string().trim().min(1).max(120),
-  page:     z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(50).default(20),
+  query:        z.string().trim().min(1).max(120),
+  page:         z.number().int().min(1).default(1),
+  pageSize:     z.number().int().min(1).max(50).default(20),
+  departments:  z.array(z.string()).optional(),
+  regions:      z.array(z.string()).optional(),
+  headcountBand: z.string().optional(),
 });
 
 export type DatagouvSearchResult = {
@@ -37,7 +41,12 @@ export async function searchDatagouvAction(
   const { tenantId } = await requireTenant();
   const input = SearchSchema.parse(raw);
 
-  const { total, results } = await searchEntreprises(input.query, input.page, input.pageSize);
+  const filters: DgFilters = {
+    departments:  input.departments,
+    regions:      input.regions,
+    headcountBand: input.headcountBand,
+  };
+  const { total, results } = await searchEntreprises(input.query, input.page, input.pageSize, filters);
 
   const sirens = results.map((r) => r.siren).filter(Boolean);
   const existing = sirens.length

@@ -80,6 +80,37 @@ function mapRechercheEntreprise(r: any): DatagouvCompany {
   };
 }
 
+/** Région (libellé) → code INSEE région pour l'API Data.gouv */
+export const REGION_TO_CODE: Record<string, string> = {
+  "Île-de-France":              "11",
+  "Centre-Val de Loire":        "24",
+  "Bourgogne-Franche-Comté":    "27",
+  "Normandie":                  "28",
+  "Hauts-de-France":            "32",
+  "Grand Est":                  "44",
+  "Pays de la Loire":           "52",
+  "Bretagne":                   "53",
+  "Nouvelle-Aquitaine":         "75",
+  "Occitanie":                  "76",
+  "Auvergne-Rhône-Alpes":       "84",
+  "Provence-Alpes-Côte d'Azur": "93",
+  "Corse":                      "94",
+  "Guadeloupe":                 "01",
+  "Martinique":                 "02",
+  "Guyane":                     "03",
+  "La Réunion":                 "04",
+  "Mayotte":                    "06",
+};
+
+/** Tranche effectif interne → premier code INSEE (pour Data.gouv qui n'accepte qu'une valeur) */
+const BAND_TO_DG_CODE: Record<string, string> = {
+  "1-9":    "03",
+  "10-49":  "12",
+  "50-249": "22",
+  "250-999":"41",
+  "1000+":  "53",
+};
+
 /** Normalise un code APE : "7111z" | "71.11z" → "71.11Z" */
 /** Normalise un code APE : "7111z" | "71.11z" | "71.11.Z" → "71.11Z" */
 function normalizeApe(raw: string): string {
@@ -135,10 +166,17 @@ async function fetchWithRetry(
   throw new Error("Erreur Data.gouv inattendue");
 }
 
+export type DgFilters = {
+  departments?: string[];
+  regions?:     string[];
+  headcountBand?: string;  // une seule valeur (1er band sélectionné)
+};
+
 export async function searchEntreprises(
   query: string,
   page = 1,
-  perPage = 20
+  perPage = 20,
+  filters: DgFilters = {}
 ): Promise<{ total: number; results: DatagouvCompany[] }> {
   const params = new URLSearchParams({
     page:     String(page),
@@ -148,11 +186,23 @@ export async function searchEntreprises(
   const q = query.trim();
 
   if (isApeCode(q)) {
-    // Code APE → paramètre dédié de l'API
     params.set("activite_principale", normalizeApe(q));
   } else {
-    // SIREN, SIRET, raison sociale, mot-clé → champ q universel
     params.set("q", q);
+  }
+
+  // Filtres server-side supportés par l'API Data.gouv
+  // (single-value uniquement — les sélections multiples sont gérées post-API)
+  if (filters.departments?.length === 1) {
+    params.set("departement", filters.departments[0]);
+  }
+  if (filters.regions?.length === 1) {
+    const code = REGION_TO_CODE[filters.regions[0]];
+    if (code) params.set("region", code);
+  }
+  if (filters.headcountBand) {
+    const code = BAND_TO_DG_CODE[filters.headcountBand];
+    if (code) params.set("tranche_effectif_salarie", code);
   }
 
   const url = `${DATAGOUV_SEARCH}?${params.toString()}`;

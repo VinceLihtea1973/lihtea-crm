@@ -780,7 +780,8 @@ function InseeSearch() {
           apeBuckets:     secteurs.length  ? secteurs  : undefined,
           apeCodes:       apeCodes.length  ? apeCodes  : undefined,
           headcountBands: tailles.length   ? tailles   : undefined,
-          regions:        regions.length   ? regions   : undefined,
+          regions:        regions.length      ? regions     : undefined,
+          departments:    departments.length  ? departments : undefined,
           page:           targetPage,
         });
         setResult(r);
@@ -816,7 +817,8 @@ function InseeSearch() {
           apeBuckets: secteurs.length ? secteurs : undefined,
           apeCodes: apeCodes.length ? apeCodes : undefined,
           headcountBands: tailles.length ? tailles : undefined,
-          regions: regions.length ? regions : undefined,
+          regions:     regions.length     ? regions     : undefined,
+          departments: departments.length ? departments : undefined,
           page: p,
         });
         for (const row of r.results) {
@@ -971,7 +973,7 @@ function InseeSearch() {
 
       {result && (
         <div className="mb-3 flex items-center gap-2 flex-wrap">
-          <Chip color="navy">{result.total} résultat{result.total > 1 ? "s" : ""}</Chip>
+          <Chip color="navy">{displayResults.length < rawResults.length ? `${displayResults.length} / ${result.total}` : result.total}{" "}résultat{result.total > 1 ? "s" : ""}</Chip>
           <Chip color={result.source === "INSEE" ? "teal" : "amber"}>
             {result.source === "INSEE" ? "Source INSEE Sirene" : "Mode démo (données fictives)"}
           </Chip>
@@ -1016,7 +1018,7 @@ function InseeSearch() {
       {result && result.results.length > 0 && (
         <>
           <ResultTable>
-            {result.results.map((r) => (
+            {displayResults.map((r) => (
               <ResultRow
                 key={r.siren}
                 siren={r.siren}
@@ -1235,22 +1237,58 @@ function DirectorSearch() {
 const DG_KEY = "prospection_dg";
 
 function DatagouvSearch() {
-  const [query,       setQuery]       = useState(() => ssGet<string>(DG_KEY + "_q", ""));
-  const [page,        setPage]        = useState(() => ssGet<number>(DG_KEY + "_page", 1));
-  const [result,      setResult]      = useState<DatagouvSearchResult | null>(() => ssGet(DG_KEY + "_result", null));
-  const [error,       setError]       = useState<string | null>(null);
-  const [pending,     start]          = useTransition();
-  const [importing,   setImporting]   = useState<string | null>(null);
-  const [importingAll,setImportingAll] = useState(false);
+  const [query,        setQuery]        = useState(() => ssGet<string>(DG_KEY + "_q", ""));
+  const [page,         setPage]         = useState(() => ssGet<number>(DG_KEY + "_page", 1));
+  const [result,       setResult]       = useState<DatagouvSearchResult | null>(() => ssGet(DG_KEY + "_result", null));
+  const [error,        setError]        = useState<string | null>(null);
+  const [pending,      start]           = useTransition();
+  const [importing,    setImporting]    = useState<string | null>(null);
+  const [importingAll, setImportingAll] = useState(false);
   const [exportingAll, setExportingAll] = useState(false);
+  const [regions,      setRegions]      = useState<string[]>(() => ssGet(DG_KEY + "_regions", []));
+  const [tailles,      setTailles]      = useState<string[]>(() => ssGet(DG_KEY + "_tailles", []));
+  const [departments,  setDepartments]  = useState<string[]>(() => ssGet(DG_KEY + "_deps", []));
+  const [legalForms,   setLegalForms]   = useState<string[]>(() => ssGet(DG_KEY + "_lf", []));
+  const [hideImported, setHideImported] = useState<boolean>(() => ssGet(DG_KEY + "_hi", false));
+  const [importedIds,  setImportedIds]  = useState<Record<string, string>>(() => ssGet(DG_KEY + "_ids", {}));
 
-  useEffect(() => { ssSave(DG_KEY + "_q",      query);  }, [query]);
-  useEffect(() => { ssSave(DG_KEY + "_page",   page);   }, [page]);
-  useEffect(() => { ssSave(DG_KEY + "_result", result); }, [result]);
+  useEffect(() => { ssSave(DG_KEY + "_q",       query);       }, [query]);
+  useEffect(() => { ssSave(DG_KEY + "_page",    page);        }, [page]);
+  useEffect(() => { ssSave(DG_KEY + "_result",  result);      }, [result]);
+  useEffect(() => { ssSave(DG_KEY + "_regions", regions);     }, [regions]);
+  useEffect(() => { ssSave(DG_KEY + "_tailles", tailles);     }, [tailles]);
+  useEffect(() => { ssSave(DG_KEY + "_deps",    departments); }, [departments]);
+  useEffect(() => { ssSave(DG_KEY + "_lf",      legalForms);  }, [legalForms]);
+  useEffect(() => { ssSave(DG_KEY + "_hi",      hideImported);}, [hideImported]);
+  useEffect(() => { ssSave(DG_KEY + "_ids",     importedIds); }, [importedIds]);
+
+  const rawResults = result?.results ?? [];
+  const displayResults = rawResults.filter((r) => {
+    if (hideImported && r.alreadyImported)                               return false;
+    if (regions.length > 1     && !regions.includes(r.region ?? ""))    return false;
+    if (tailles.length > 1     && !tailles.includes(r.headcountBand ?? "")) return false;
+    if (departments.length > 1 && !departments.includes(r.department ?? "")) return false;
+    if (legalForms.length > 0) { const lf=(r.legalForm??"").toUpperCase(); if(!legalForms.some(f=>lf.includes(f))) return false; }
+    return true;
+  });
+  const FORMES_JURIDIQUES = [
+    {value:"SAS",label:"SAS"},{value:"SARL",label:"SARL"},{value:"SA",label:"SA"},
+    {value:"EURL",label:"EURL"},{value:"SCI",label:"SCI"},{value:"SASU",label:"SASU"},
+    {value:"EI",label:"Entreprise individuelle"},{value:"ASSOCIATION",label:"Association"},
+  ];
+  const DEPARTMENTS_DG = [
+    "01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","21",
+    "22","23","24","25","26","27","28","29","2A","2B","30","31","32","33","34","35","36","37","38","39",
+    "40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59",
+    "60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79",
+    "80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","971","972","973","974","976",
+  ];
 
   function handleReset() {
     setQuery(""); setPage(1); setResult(null); setError(null);
-    [DG_KEY + "_q", DG_KEY + "_page", DG_KEY + "_result"].forEach((k) => sessionStorage.removeItem(k));
+    setRegions([]); setTailles([]); setDepartments([]); setLegalForms([]); setHideImported(false); setImportedIds({});
+    [DG_KEY+"_q",DG_KEY+"_page",DG_KEY+"_result",DG_KEY+"_regions",DG_KEY+"_tailles",
+     DG_KEY+"_deps",DG_KEY+"_lf",DG_KEY+"_hi",DG_KEY+"_ids"].forEach(k=>sessionStorage.removeItem(k));
   }
 
   async function importAll() {
@@ -1285,7 +1323,11 @@ function DatagouvSearch() {
     setError(null);
     setPage(targetPage);
     start(async () => {
-      try { setResult(await searchDatagouvAction({ query, page: targetPage })); }
+      try { setResult(await searchDatagouvAction({ query, page: targetPage,
+          departments: departments.length ? departments : undefined,
+          regions: regions.length ? regions : undefined,
+          headcountBand: tailles.length===1 ? tailles[0] : undefined,
+        })); }
       catch (e) { setError(e instanceof Error ? e.message : "Erreur Data.gouv"); }
     });
   }
@@ -1324,7 +1366,11 @@ function DatagouvSearch() {
     const totalPages = Math.ceil((result.total ?? 0) / 20);
     for (let p = 2; p <= Math.min(totalPages, 40); p++) {
       try {
-        const r = await searchDatagouvAction({ query, page: p });
+        const r = await searchDatagouvAction({ query, page: p,
+            departments: departments.length ? departments : undefined,
+            regions: regions.length ? regions : undefined,
+            headcountBand: tailles.length===1 ? tailles[0] : undefined,
+          });
         for (const row of r.results) {
           allRows.push([row.name, row.siren, row.legalForm ?? "", row.apeCode ?? "", row.region ?? "", row.city ?? "", row.headcountBand ?? "",
             row.dirigeants?.slice(0,3).map((d) => [d.prenom, d.nom].filter(Boolean).join(" ")).join(", ") ?? "",
@@ -1358,9 +1404,34 @@ function DatagouvSearch() {
             {pending ? "Recherche…" : "🔍 Rechercher"}
           </Button>
         </div>
-        <p className="text-[11px] text-text-3 px-1">
-          Recherchez par <span className="font-semibold text-text-2">raison sociale</span>, <span className="font-semibold text-text-2">SIREN</span>, <span className="font-semibold text-text-2">SIRET</span> ou <span className="font-semibold text-text-2">code APE</span> — annuaire officiel agrégeant INSEE, INPI et URSSAF. Inclut les <span className="font-semibold text-text-2">dirigeants</span> et l'<span className="font-semibold text-text-2">adresse du siège</span>.
+        <p className="text-[11px] text-text-3 mb-3 px-1">
+          Recherchez par <span className="font-semibold text-text-2">raison sociale</span>, <span className="font-semibold text-text-2">SIREN</span>, <span className="font-semibold text-text-2">SIRET</span> ou <span className="font-semibold text-text-2">code APE</span> — annuaire officiel agrégeant INSEE, INPI et URSSAF.
         </p>
+        <div className="flex flex-wrap gap-2 items-center">
+          <MultiSelect label="Localisation" options={REGIONS.map(r=>({value:r,label:r}))} selected={regions} onChange={setRegions} />
+          <MultiSelect label="Taille" options={TAILLES} selected={tailles} onChange={setTailles} />
+          <MultiSelect label="Département" options={DEPARTMENTS_DG.map(d=>({value:d,label:d}))} selected={departments} onChange={setDepartments} />
+          <MultiSelect label="Forme juridique" options={FORMES_JURIDIQUES} selected={legalForms} onChange={setLegalForms} />
+          <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface text-[12px] font-medium text-text-2 cursor-pointer hover:bg-bg transition-colors">
+            <input type="checkbox" checked={hideImported} onChange={e=>setHideImported(e.target.checked)} className="w-3.5 h-3.5 rounded accent-teal" />
+            Masquer importés
+          </label>
+        </div>
+        <ActiveTags secteurs={[]} setSecteurs={()=>{}} regions={regions} setRegions={setRegions} tailles={tailles} setTailles={setTailles} apeCodes={[]} setApeCodes={()=>{}} />
+        {(departments.length>0||legalForms.length>0) && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {departments.map(d=>(
+              <span key={d} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 bg-teal/10 border border-teal/20 text-teal text-[12px] font-semibold rounded-full">
+                Dép.{d}<button type="button" onClick={()=>setDepartments(departments.filter(x=>x!==d))} className="w-4 h-4 rounded-full hover:bg-teal/20 grid place-items-center text-[10px]">×</button>
+              </span>
+            ))}
+            {legalForms.map(f=>(
+              <span key={f} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 bg-teal/10 border border-teal/20 text-teal text-[12px] font-semibold rounded-full">
+                {f}<button type="button" onClick={()=>setLegalForms(legalForms.filter(x=>x!==f))} className="w-4 h-4 rounded-full hover:bg-teal/20 grid place-items-center text-[10px]">×</button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {error && <div className="mb-4 px-4 py-3 rounded-lg bg-lh-red-bg text-lh-red text-[13px]">{error}</div>}
@@ -1426,7 +1497,7 @@ function DatagouvSearch() {
                 headcountBand={r.headcountBand}
                 icpScore={r.icpScore}
                 alreadyImported={r.alreadyImported}
-                companyId={r.companyId ?? undefined}
+                companyId={importedIds[r.siren] ?? r.companyId ?? undefined}
                 importing={importing === r.siren}
                 isActive={r.isActive}
                 extra={
@@ -1438,6 +1509,9 @@ function DatagouvSearch() {
               />
             ))}
           </ResultTable>
+          {displayResults.length < rawResults.length && (
+            <p className="mt-2 text-[11px] text-text-3 text-center">{displayResults.length} affichés sur {rawResults.length} chargés — filtres actifs</p>
+          )}
           <Pagination
             page={page}
             total={result.total}

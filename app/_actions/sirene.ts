@@ -16,6 +16,7 @@ const SearchSchema = z.object({
   apeCodes:       z.array(z.string()).optional(),
   headcountBands: z.array(z.string()).optional(),
   regions:        z.array(z.string()).optional(),
+  departments:    z.array(z.string()).optional(),
   page:           z.number().int().min(1).max(50).default(1),
   pageSize:       z.number().int().min(1).max(100).default(20),
 });
