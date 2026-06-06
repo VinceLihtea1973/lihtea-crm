@@ -40,7 +40,6 @@ export function Header({
           <span className="text-white text-sm font-bold tracking-tight">{title}</span>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2 flex-none">{actions}</div>}
     </div>
   );
 
