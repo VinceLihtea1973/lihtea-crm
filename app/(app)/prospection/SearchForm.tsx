@@ -676,6 +676,7 @@ function InseeSearch() {
   const [pending,   start]        = useTransition();
   const [importing,    setImporting]   = useState<string | null>(null);
   const [importingAll, setImportingAll] = useState(false);
+  const [importProgress, setImportProgress] = useState<{page:number;totalPages:number;count:number}|null>(null);
   const [importedIds,  setImportedIds] = useState<Record<string, string>>(() => ssGet(INSEE_KEY + "_ids", {}));
   const [saveOpen,     setSaveOpen]    = useState(false);
   const [departments,  setDepartments] = useState<string[]>(() => ssGet(INSEE_KEY + "_deps", []));
@@ -768,6 +769,49 @@ function InseeSearch() {
     }
     setImporting(null);
     setImportingAll(false);
+  }
+
+  async function importAllPages() {
+    if (!result) return;
+    const MAX_PAGES = 40;
+    const ps = result.pageSize ?? 20;
+    const totalPages = Math.min(MAX_PAGES, Math.ceil(result.total / ps));
+    let count = 0;
+    setImportProgress({ page: 1, totalPages, count: 0 });
+    setError(null);
+    for (let p = 1; p <= totalPages; p++) {
+      setImportProgress({ page: p, totalPages, count });
+      let pageResults = p === page ? result.results : [];
+      if (p !== page) {
+        try {
+          const r = await searchSireneAction({
+            query: query || undefined,
+            apeBuckets: secteurs.length ? secteurs : undefined,
+            apeCodes: apeCodes.length ? apeCodes : undefined,
+            headcountBands: tailles.length ? tailles : undefined,
+            regions: regions.length ? regions : undefined,
+            departments: departments.length ? departments : undefined,
+            page: p,
+          });
+          pageResults = r.results;
+        } catch { break; }
+      }
+      for (const r of pageResults.filter(r => !r.alreadyImported)) {
+        setImporting(r.siren);
+        try {
+          const out = await importSireneCompanyAction({
+            siren: r.siren, siret: r.siret ?? undefined, name: r.name,
+            apeCode: r.apeCode, nafBucket: r.nafBucket, legalForm: r.legalForm,
+            legalFormCode: r.legalFormCode, headcountBand: r.headcountBand,
+            region: r.region, department: r.department, city: r.city,
+            postalCode: r.postalCode, address: r.address, creationDate: r.creationDate,
+          });
+          if (out.ok) { count++; setImportedIds(prev => ({ ...prev, [r.siren]: out.companyId })); }
+        } catch { /* continue */ }
+      }
+    }
+    setImporting(null);
+    setImportProgress(null);
   }
 
   function runSearch(targetPage = 1) {
@@ -1001,16 +1045,24 @@ function InseeSearch() {
             📥 Export toutes pages
           </button>
           {result.results.some((r) => !r.alreadyImported) && (
-            <button
-              type="button"
-              onClick={importAll}
-              disabled={importingAll}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-semibold hover:bg-navy/80 disabled:opacity-50 transition-colors"
-            >
-              {importingAll
-                ? `Importation… (${result.results.filter((r) => r.alreadyImported).length}/${result.results.length})`
-                : `⬇ Tout importer (${result.results.filter((r) => !r.alreadyImported).length})`}
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={importAll}
+                disabled={importingAll || !!importProgress}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-border text-[12px] font-semibold text-text-2 hover:bg-bg disabled:opacity-50 transition-colors"
+              >
+                {importingAll ? `Import… (${result.results.filter(r=>r.alreadyImported).length}/${result.results.length})` : `⬇ Page (${result.results.filter(r=>!r.alreadyImported).length})`}
+              </button>
+              <button
+                type="button"
+                onClick={importAllPages}
+                disabled={importingAll || !!importProgress}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-semibold hover:bg-navy/80 disabled:opacity-50 transition-colors"
+              >
+                {importProgress ? `⏳ Page ${importProgress.page}/${importProgress.totalPages} — ${importProgress.count} importées` : `⬇ Toutes les pages (max 40)`}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -1245,6 +1297,7 @@ function DatagouvSearch() {
   const [importing,    setImporting]    = useState<string | null>(null);
   const [importingAll, setImportingAll] = useState(false);
   const [exportingAll, setExportingAll] = useState(false);
+  const [importProgress, setImportProgress] = useState<{page:number;totalPages:number;count:number}|null>(null);
   const [regions,      setRegions]      = useState<string[]>(() => ssGet(DG_KEY + "_regions", []));
   const [tailles,      setTailles]      = useState<string[]>(() => ssGet(DG_KEY + "_tailles", []));
   const [departments,  setDepartments]  = useState<string[]>(() => ssGet(DG_KEY + "_deps", []));
@@ -1353,7 +1406,45 @@ function DatagouvSearch() {
     } finally { setImporting(null); }
   }
 
-  async function exportAllPages() {
+  async function importAllPages() {
+    if (!result) return;
+    const MAX_PAGES = 40;
+    const totalPages = Math.min(MAX_PAGES, Math.ceil(result.total / 20));
+    let count = 0;
+    setImportProgress({ page: 1, totalPages, count: 0 });
+    setError(null);
+    for (let p = 1; p <= totalPages; p++) {
+      setImportProgress({ page: p, totalPages, count });
+      let pageResults = p === page ? result.results : [];
+      if (p !== page) {
+        try {
+          const r = await searchDatagouvAction({ query, page: p,
+            departments: departments.length ? departments : undefined,
+            regions: regions.length ? regions : undefined,
+            headcountBand: tailles.length===1 ? tailles[0] : undefined,
+          });
+          pageResults = r.results;
+        } catch { break; }
+      }
+      for (const r of pageResults.filter(r => !r.alreadyImported)) {
+        setImporting(r.siren);
+        try {
+          const out = await importDatagouvCompanyAction({
+            siren: r.siren, siret: r.siret, name: r.name,
+            legalForm: r.legalForm, apeCode: r.apeCode,
+            headcountBand: r.headcountBand, region: r.region,
+            department: r.department, city: r.city,
+            postalCode: r.postalCode, address: r.address,
+          });
+          if (out.ok) { count++; setImportedIds(prev => ({ ...prev, [r.siren]: out.companyId })); }
+        } catch { /* continue */ }
+      }
+    }
+    setImporting(null);
+    setImportProgress(null);
+  }
+
+    async function exportAllPages() {
     if (!result) return;
     setExportingAll(true);
     const allRows: string[][] = [];
@@ -1467,16 +1558,16 @@ function DatagouvSearch() {
           </button>
 
           {result.results.some((r) => !r.alreadyImported) && (
-            <button
-              type="button"
-              onClick={importAll}
-              disabled={importingAll}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-semibold hover:bg-navy/80 disabled:opacity-50 transition-colors"
-            >
-              {importingAll
-                ? `Importation… (${result.results.filter((r) => r.alreadyImported).length}/${result.results.length})`
-                : `⬇ Tout importer (${result.results.filter((r) => !r.alreadyImported).length})`}
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button type="button" onClick={importAll} disabled={importingAll || !!importProgress}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-border text-[12px] font-semibold text-text-2 hover:bg-bg disabled:opacity-50 transition-colors">
+                {importingAll ? `Import… (${result.results.filter(r=>r.alreadyImported).length}/${result.results.length})` : `⬇ Page (${result.results.filter(r=>!r.alreadyImported).length})`}
+              </button>
+              <button type="button" onClick={importAllPages} disabled={importingAll || !!importProgress}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-semibold hover:bg-navy/80 disabled:opacity-50 transition-colors">
+                {importProgress ? `⏳ Page ${importProgress.page}/${importProgress.totalPages} — ${importProgress.count} importées` : `⬇ Toutes les pages (max 40)`}
+              </button>
+            </div>
           )}
         </div>
       )}
