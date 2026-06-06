@@ -808,7 +808,7 @@ function InseeSearch() {
     }
     
     // Pages suivantes
-    const totalPages = Math.ceil((result.total ?? 0) / 25);
+    const totalPages = Math.ceil((result.total ?? 0) / (result.pageSize ?? 20));
     for (let p = 2; p <= Math.min(totalPages, 40); p++) {
       try {
         const r = await searchSireneAction({
@@ -1242,6 +1242,7 @@ function DatagouvSearch() {
   const [pending,     start]          = useTransition();
   const [importing,   setImporting]   = useState<string | null>(null);
   const [importingAll,setImportingAll] = useState(false);
+  const [exportingAll, setExportingAll] = useState(false);
 
   useEffect(() => { ssSave(DG_KEY + "_q",      query);  }, [query]);
   useEffect(() => { ssSave(DG_KEY + "_page",   page);   }, [page]);
@@ -1310,6 +1311,31 @@ function DatagouvSearch() {
     } finally { setImporting(null); }
   }
 
+  async function exportAllPages() {
+    if (!result) return;
+    setExportingAll(true);
+    const allRows: string[][] = [];
+    const headers = ["Raison sociale","SIREN","Forme juridique","Code APE","R\u00e9gion","Ville","Effectifs","Dirigeants","ICP Score","Statut"];
+    for (const r of result.results) {
+      allRows.push([r.name, r.siren, r.legalForm ?? "", r.apeCode ?? "", r.region ?? "", r.city ?? "", r.headcountBand ?? "",
+        r.dirigeants?.slice(0,3).map((d) => [d.prenom, d.nom].filter(Boolean).join(" ")).join(", ") ?? "",
+        String(r.icpScore ?? ""), r.alreadyImported ? "Import\u00e9" : "Non import\u00e9"]);
+    }
+    const totalPages = Math.ceil((result.total ?? 0) / 20);
+    for (let p = 2; p <= Math.min(totalPages, 40); p++) {
+      try {
+        const r = await searchDatagouvAction({ query, page: p });
+        for (const row of r.results) {
+          allRows.push([row.name, row.siren, row.legalForm ?? "", row.apeCode ?? "", row.region ?? "", row.city ?? "", row.headcountBand ?? "",
+            row.dirigeants?.slice(0,3).map((d) => [d.prenom, d.nom].filter(Boolean).join(" ")).join(", ") ?? "",
+            String(row.icpScore ?? ""), row.alreadyImported ? "Import\u00e9" : "Non import\u00e9"]);
+        }
+      } catch { break; }
+    }
+    downloadCSV(`prospection-datagouv-complet-${new Date().toISOString().slice(0,10)}.csv`, allRows, headers);
+    setExportingAll(false);
+  }
+
   return (
     <div>
       <div className="bg-surface rounded-xl border border-border shadow-sm p-4 mb-5">
@@ -1358,6 +1384,15 @@ function DatagouvSearch() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-[12px] font-semibold text-text-2 hover:bg-bg transition-colors"
           >
             📥 Excel (page)
+          </button>
+
+          <button
+            type="button"
+            onClick={exportAllPages}
+            disabled={exportingAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal/40 bg-teal/5 text-[12px] font-semibold text-teal hover:bg-teal/10 disabled:opacity-50 transition-colors"
+          >
+            {exportingAll ? "Export en cours\u2026" : "\uD83D\uDCE5 Export toutes pages"}
           </button>
 
           {result.results.some((r) => !r.alreadyImported) && (
