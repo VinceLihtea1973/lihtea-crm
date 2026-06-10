@@ -1306,6 +1306,7 @@ function DatagouvSearch() {
   const [tailles,      setTailles]      = useState<string[]>(() => ssGet(DG_KEY + "_tailles", []));
   const [departments,  setDepartments]  = useState<string[]>(() => ssGet(DG_KEY + "_deps", []));
   const [legalForms,   setLegalForms]   = useState<string[]>(() => ssGet(DG_KEY + "_lf", []));
+  const [categorie,setCategorie]=useState<string>(()=>ssGet(DG_KEY+"_cat",""));
   const [hideImported, setHideImported] = useState<boolean>(() => ssGet(DG_KEY + "_hi", false));
   const [importedIds,  setImportedIds]  = useState<Record<string, string>>(() => ssGet(DG_KEY + "_ids", {}));
 
@@ -1343,9 +1344,9 @@ function DatagouvSearch() {
 
   function handleReset() {
     setQuery(""); setPage(1); setResult(null); setError(null);
-    setRegions([]); setTailles([]); setDepartments([]); setLegalForms([]); setHideImported(false); setImportedIds({});
+    setRegions([]); setTailles([]); setDepartments([]); setLegalForms([]); setCategorie(""); setHideImported(false); setImportedIds({});
     [DG_KEY+"_q",DG_KEY+"_page",DG_KEY+"_result",DG_KEY+"_regions",DG_KEY+"_tailles",
-     DG_KEY+"_deps",DG_KEY+"_lf",DG_KEY+"_hi",DG_KEY+"_ids"].forEach(k=>sessionStorage.removeItem(k));
+     DG_KEY+"_deps",DG_KEY+"_lf",DG_KEY+"_cat",DG_KEY+"_hi",DG_KEY+"_ids"].forEach(k=>sessionStorage.removeItem(k));
   }
 
   async function importAll() {
@@ -1380,11 +1381,7 @@ function DatagouvSearch() {
     setError(null);
     setPage(targetPage);
     start(async () => {
-      try { setResult(await searchDatagouvAction({ query, page: targetPage,
-          departments: departments.length ? departments : undefined,
-          regions: regions.length ? regions : undefined,
-          headcountBand: tailles.length===1 ? tailles[0] : undefined,
-        })); }
+      try { setResult(await searchDatagouvAction({ query, page: targetPage, departments:departments.length?departments:undefined, regions:regions.length?regions:undefined, headcountBands:tailles.length?tailles:undefined, categorieEntreprise:categorie||undefined, formeJuridique:legalForms.length===1?legalForms[0]:undefined })); }
       catch (e) { setError(e instanceof Error ? e.message : "Erreur Data.gouv"); }
     });
   }
@@ -1466,9 +1463,7 @@ function DatagouvSearch() {
       setExportProgress({ page: p, totalPages });
       try {
         const r = await searchDatagouvAction({ query, page: p,
-          departments: departments.length ? departments : undefined,
-          regions: regions.length ? regions : undefined,
-          headcountBand: tailles.length===1 ? tailles[0] : undefined,
+          departments:departments.length?departments:undefined, regions:regions.length?regions:undefined, headcountBands:tailles.length?tailles:undefined, categorieEntreprise:categorie||undefined, formeJuridique:legalForms.length===1?legalForms[0]:undefined,
         });
         r.results.forEach(pushRow);
       } catch { break; }
@@ -1510,6 +1505,13 @@ function DatagouvSearch() {
           <MultiSelect label="Taille" options={TAILLES} selected={tailles} onChange={setTailles} />
           <MultiSelect label="Département" options={DEPARTMENTS_DG.map(d=>({value:d,label:d}))} selected={departments} onChange={setDepartments} />
           <MultiSelect label="Forme juridique" options={FORMES_JURIDIQUES} selected={legalForms} onChange={setLegalForms} />
+          <select value={categorie} onChange={e=>{const v=e.target.value;setCategorie(v);if(result&&query.trim())start(async()=>{try{setResult(await searchDatagouvAction({query,page:1,categorieEntreprise:v||undefined,departments:departments.length?departments:undefined,regions:regions.length?regions:undefined,headcountBands:tailles.length?tailles:undefined,formeJuridique:legalForms.length===1?legalForms[0]:undefined}))}catch{}})}} className="h-[36px] px-3 rounded-lg border border-border bg-surface text-[12px] font-medium text-text-2 focus:outline-none focus:ring-2 focus:ring-teal/40">
+            <option value="">Catégorie (CA)</option>
+            <option value="TPE">TPE — CA &lt; 2 M€</option>
+            <option value="PME">PME — CA 2–50 M€</option>
+            <option value="ETI">ETI — CA 50–1 500 M€</option>
+            <option value="GE">GE — CA &gt; 1,5 Md€</option>
+          </select>
           <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface text-[12px] font-medium text-text-2 cursor-pointer hover:bg-bg transition-colors">
             <input type="checkbox" checked={hideImported} onChange={e=>setHideImported(e.target.checked)} className="w-3.5 h-3.5 rounded accent-teal" />
             Masquer importés
