@@ -12,22 +12,29 @@ export default async function ComptesPage() {
   const companies = await prisma.company.findMany({
     where: { tenantId },
     orderBy: [{ status: "asc" }, { name: "asc" }],
-    include: {
-      _count: { select: { contacts: true, deals: true } },
-    },
+    include: { _count: { select: { contacts: true, deals: true } } },
   });
 
   const serialized = companies.map((c) => ({
-    id:        c.id,
-    name:      c.name,
-    siren:     c.siren,
-    legalForm: c.legalForm,
-    status:    c.status as "PROSPECT" | "LEAD" | "CLIENT" | "LOST",
-    region:    c.region,
-    city:      c.city,
-    icp:       c.icp ?? 0,
-    contacts:  c._count.contacts,
-    deals:     c._count.deals,
+    id:            c.id,
+    name:          c.name,
+    siren:         c.siren,
+    siret:         c.siret,
+    legalForm:     c.legalForm,
+    legalFormCode: c.legalFormCode,
+    apeCode:       c.apeCode,
+    headcountBand: c.headcountBand,
+    status:        c.status as "PROSPECT" | "LEAD" | "CLIENT" | "LOST",
+    region:        c.region,
+    department:    c.department,
+    city:          c.city,
+    postalCode:    c.postalCode,
+    address:       c.address,
+    icp:           c.icp ?? 0,
+    contacts:      c._count.contacts,
+    deals:         c._count.deals,
+    creationDate:  c.creationDate ? c.creationDate.toISOString().slice(0,10) : null,
+    enrichedAt:    c.enrichedAt   ? c.enrichedAt.toISOString().slice(0,10)   : null,
   }));
 
   return (
