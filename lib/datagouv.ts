@@ -4,8 +4,7 @@
  * 1. recherche-entreprises.api.gouv.fr
  *    Recherche libre d'entreprises (agrège INSEE, INPI, URSSAF).
  *    Pas de clé API requise.
- *
- * 2. BODACC (bodacc-datadila.opendatasoft.com)
+feat: filtres Data.gouv parallèles + filtre CA (TPE/PME/ETI/GE) * 2. BODACC (bodacc-datadila.opendatasoft.com)
  *    Annonces légales officielles : créations, cessions, procédures,
  *    modifications, radiations.
  *    Pas de clé API requise.
@@ -166,138 +165,61 @@ async function fetchWithRetry(
   throw new Error("Erreur Data.gouv inattendue");
 }
 
+export const FORME_TO_NATURE_JUR: Record<string,string> = {
+  "SAS":"5710","SASU":"5710","SARL":"5499","EURL":"5498",
+  "SA":"5505","SCI":"6540","SNC":"5202","EI":"1000","ASSOCIATION":"9220",
+};
+export const CATEGORIE_LABELS: Record<string,string> = {
+  "TPE":"TPE — CA < 2 M€","PME":"PME — CA 2–50 M€",
+  "ETI":"ETI — CA 50 M€–1,5 Md€","GE":"GE — CA > 1,5 Md€",
+};
+const BAND_TO_CODES: Record<string,string[]> = {
+  "1-9":["00","01","02","03"],"10-49":["11","12"],
+  "50-249":["21","22","31"],"250-999":["32","41"],"1000+":["42","51","52","53"],
+};
 export type DgFilters = {
-  departments?: string[];
-  regions?:     string[];
-  headcountBand?: string;  // une seule valeur (1er band sélectionné)
+  departments?:         string[];
+  regions?:             string[];
+  headcountBands?:      string[];
+  categorieEntreprise?: string;
+  formeJuridique?:      string;
 };
-
 export async function searchEntreprises(
-  query: string,
-  page = 1,
-  perPage = 20,
-  filters: DgFilters = {}
+  query: string, page = 1, perPage = 20, filters: DgFilters = {}
 ): Promise<{ total: number; results: DatagouvCompany[] }> {
-  const params = new URLSearchParams({
-    page:     String(page),
-    per_page: String(perPage),
-  });
-
   const q = query.trim();
-
-  if (isApeCode(q)) {
-    params.set("activite_principale", normalizeApe(q));
-  } else {
-    params.set("q", q);
+  async function fetchSlice(regionCode?: string, dept?: string) {
+    const p = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    if (isApeCode(q)) p.set("activite_principale", normalizeApe(q)); else p.set("q", q);
+    if (dept)       p.set("departement", dept);
+    if (regionCode) p.set("region", regionCode);
+    if (filters.headcountBands?.length) { const c=BAND_TO_CODES[filters.headcountBands[0]]?.[0]; if(c) p.set("tranche_effectif_salarie",c); }
+    if (filters.categorieEntreprise)   p.set("categorie_entreprise", filters.categorieEntreprise);
+    if (filters.formeJuridique) { const c=FORME_TO_NATURE_JUR[filters.formeJuridique]; if(c) p.set("nature_juridique",c); }
+    p.set("etat_administratif","A");
+    const url = `${DATAGOUV_SEARCH}?${p.toString()}`;
+    const cached = _reqCache.get(url);
+    if (cached && cached.expires > Date.now()) {
+      const d = cached.data as any; // eslint-disable-line
+      return { total: d.total_results??0, results: (d.results??[]).map(mapRechercheEntreprise) };
+    }
+    const res  = await fetchWithRetry(url);
+    const data = await res.json() as any; // eslint-disable-line
+    _reqCache.set(url, { data, expires: Date.now()+10_000 });
+    return { total: data.total_results??0, results: (data.results??[]).map(mapRechercheEntreprise) };
   }
-
-  // Filtres server-side supportés par l'API Data.gouv
-  // (single-value uniquement — les sélections multiples sont gérées post-API)
-  if (filters.departments?.length === 1) {
-    params.set("departement", filters.departments[0]);
-  }
-  if (filters.regions?.length === 1) {
-    const code = REGION_TO_CODE[filters.regions[0]];
-    if (code) params.set("region", code);
-  }
-  if (filters.headcountBand) {
-    const code = BAND_TO_DG_CODE[filters.headcountBand];
-    if (code) params.set("tranche_effectif_salarie", code);
-  }
-
-  const url = `${DATAGOUV_SEARCH}?${params.toString()}`;
-
-  // Cache serveur 10s — évite les doubles hits en dev (StrictMode, HMR)
-  const cached = _reqCache.get(url);
-  if (cached && cached.expires > Date.now()) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = cached.data as any;
-    return { total: data.total_results ?? 0, results: (data.results ?? []).map(mapRechercheEntreprise) };
-  }
-
-  const res  = await fetchWithRetry(url);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = await res.json();
-
-  _reqCache.set(url, { data, expires: Date.now() + 10_000 });
-
-  return {
-    total:   data.total_results ?? 0,
-    results: (data.results ?? []).map(mapRechercheEntreprise),
-  };
+  const regions = filters.regions?.length    ? filters.regions    : [undefined as string|undefined];
+  const depts   = filters.departments?.length ? filters.departments : [undefined as string|undefined];
+  if (regions.length<=1 && depts.length<=1)
+    return fetchSlice(regions[0]?REGION_TO_CODE[regions[0]]:undefined, depts[0]);
+  const combos: [string|undefined,string|undefined][] = [];
+  for (const r of regions.slice(0,4)) for (const d of depts.slice(0,4)) combos.push([r?REGION_TO_CODE[r]:undefined,d]);
+  const pages = await Promise.all(combos.map(([r,d])=>fetchSlice(r,d)));
+  const seen = new Set<string>();
+  const merged = pages.flatMap(p=>p.results).filter(r=>{ if(seen.has(r.siren))return false; seen.add(r.siren);return true; });
+  return { total: pages.reduce((s,p)=>s+p.total,0), results: merged.slice(0,perPage) };
 }
 
-// ─── BODACC ───────────────────────────────────────────────────────
-
-const BODACC_BASE =
-  "https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records";
-
-const BODACC_TYPE_MAP: Record<string, BodaccSignalType> = {
-  "Vente et cession":               "VENTE",
-  "Immatriculation":                "CREATION",
-  "Création d'établissement":       "CREATION",
-  "Modification":                   "MODIFICATION",
-  "Radiation":                      "RADIATION",
-  "Procédure collective":           "PROCEDURE_COLLECTIVE",
-  "Procédure de conciliation":      "PROCEDURE_COLLECTIVE",
-  "Dépôt des comptes":              "DEPOT_COMPTES",
-};
-
-const BODACC_TYPE_LABELS: Record<BodaccSignalType, string> = {
-  CREATION:             "Création / Immatriculation",
-  VENTE:                "Vente / Cession de fonds",
-  MODIFICATION:         "Modification",
-  RADIATION:            "Radiation / Fermeture",
-  PROCEDURE_COLLECTIVE: "Procédure collective",
-  DEPOT_COMPTES:        "Dépôt des comptes",
-  AUTRE:                "Annonce BODACC",
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapBodacc(raw: any): BodaccSignal {
-  const famille = raw.familleavis_lib ?? raw.typeavis_lib ?? "";
-  const type    = BODACC_TYPE_MAP[famille] ?? "AUTRE";
-  const siren   = raw.registre_du_commerce_numero_siren
-                  ?? raw.numerodossier?.replace(/[^0-9]/g, "").slice(0, 9)
-                  ?? "";
-
-  return {
-    id:          raw.id ?? String(Math.random()),
-    siren,
-    companyName: raw.commercant ?? raw.denomination ?? "—",
-    type,
-    typeLabel:   BODACC_TYPE_LABELS[type],
-    date:        raw.dateparution ? new Date(raw.dateparution) : new Date(),
-    tribunal:    raw.tribunal ?? null,
-    detail:      raw.actes?.[0]?.acte_type_label
-                 ?? raw.jugements?.[0]?.famille_lib
-                 ?? raw.depot?.categoriedepot
-                 ?? null,
-    url:         raw.publicationavis_facette
-                 ? `https://www.bodacc.fr/annonce/detail-annonce/${raw.publicationavis_facette}`
-                 : null,
-  };
-}
-
-/** Signaux BODACC pour un SIREN donné */
-export async function fetchBodaccBySiren(
-  siren: string,
-  limit = 10
-): Promise<BodaccSignal[]> {
-  const params = new URLSearchParams({
-    where:     `registre_du_commerce_numero_siren="${siren}"`,
-    order_by:  "dateparution desc",
-    limit:     String(limit),
-  });
-
-  const res = await fetch(`${BODACC_BASE}?${params}`, { cache: "no-store" });
-  if (!res.ok) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = await res.json();
-  return (data.results ?? []).map(mapBodacc);
-}
-
-/** Signaux BODACC récents pour une liste de SIRENs (dashboard) */
 export async function fetchBodaccForSirens(
   sirens: string[],
   daysBack = 90,
