@@ -193,7 +193,7 @@ export function ComptesClient({ companies }: { companies: Company[] }) {
 
           {/* Onglets statut */}
           <div className="flex gap-1.5 flex-wrap">
-            x(["ALL","PROSPECT","LEAD","CLIENT","LOST"] as const).map(s => {
+            {(["ALL","PROSPECT","LEAD","CLIENT","LOST"] as const).map(s => {
               const active = statusFilter === s;
               const colors: Record<typeof s, string> = {
                 ALL: "bg-navy text-white border-navy",
