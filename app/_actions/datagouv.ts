@@ -18,12 +18,14 @@ import { CompanySource } from "@prisma/client";
 // ─── Recherche entreprises ────────────────────────────────────────
 
 const SearchSchema = z.object({
-  query:        z.string().trim().min(1).max(120),
-  page:         z.number().int().min(1).default(1),
-  pageSize:     z.number().int().min(1).max(50).default(20),
-  departments:  z.array(z.string()).optional(),
-  regions:      z.array(z.string()).optional(),
-  headcountBand: z.string().optional(),
+  query:               z.string().trim().min(1).max(120),
+  page:                z.number().int().min(1).default(1),
+  pageSize:            z.number().int().min(1).max(50).default(20),
+  departments:         z.array(z.string()).optional(),
+  regions:             z.array(z.string()).optional(),
+  headcountBands:      z.array(z.string()).optional(),
+  categorieEntreprise: z.string().optional(),
+  formeJuridique:      z.string().optional(),
 });
 
 export type DatagouvSearchResult = {
@@ -42,9 +44,11 @@ export async function searchDatagouvAction(
   const input = SearchSchema.parse(raw);
 
   const filters: DgFilters = {
-    departments:  input.departments,
-    regions:      input.regions,
-    headcountBand: input.headcountBand,
+    departments:         input.departments,
+    regions:             input.regions,
+    headcountBands:      input.headcountBands,
+    categorieEntreprise: input.categorieEntreprise,
+    formeJuridique:      input.formeJuridique,
   };
   const { total, results } = await searchEntreprises(input.query, input.page, input.pageSize, filters);
 
