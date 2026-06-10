@@ -603,15 +603,16 @@ function SaveListModal({
 // ─── Export CSV ───────────────────────────────────────────────────
 
 function downloadExcel(filename: string, rows: string[][], headers: string[]) {
-  const esc = (v: string) => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const toRow = (cells: string[]) => "<tr>" + cells.map(c => `<td>${esc(c)}</td>`).join("") + "</tr>";
-  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Export</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table>${toRow(headers)}${rows.map(toRow).join("")}</table></body></html>`;
-  const blob = new Blob(["﻿" + html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+  const esc = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(esc).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = filename.replace(/\.csv$/, ".xls"); a.click();
-  URL.revokeObjectURL(url);
+  document.body.appendChild(a);
+  a.href = url; a.download = filename.replace(/\.(xls|csv)$/, ".csv"); a.style.display = "none"; a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
 }
+
 function downloadCSV(filename: string, rows: string[][], headers: string[]) {
   downloadExcel(filename, rows, headers);
 }
