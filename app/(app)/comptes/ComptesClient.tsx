@@ -40,31 +40,31 @@ type SortKey = "name" | "status" | "icp" | "region" | "contacts" | "deals" | "ap
 type SortDir = "asc" | "desc";
 
 // ─── Export Excel (HTML table → .xls) ────────────────────────────
-function exportToExcel(rows: Company[], filename: string) {
+function exportToCSV(rows: Company[], filename: string) {
   const headers = [
     "Raison sociale","SIREN","SIRET","Forme juridique","Code APE","Effectifs",
     "Statut","Région","Département","Ville","Code postal","Adresse",
     "Score ICP","Contacts","Deals","Date création","Enrichi le",
   ];
-  const esc = (v: string) => String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const toRow = (cells: string[]) => "<tr>" + cells.map(c => `<td>${esc(c)}</td>`).join("") + "</tr>";
-  const dataRows = rows.map(c => [
-    c.name, c.siren ?? "", c.siret ?? "",
-    c.legalForm ?? "", c.apeCode ?? "", c.headcountBand ?? "",
-    STATUS_META[c.status].label,
-    c.region ?? "", c.department ?? "", c.city ?? "", c.postalCode ?? "", c.address ?? "",
-    String(c.icp), String(c.contacts), String(c.deals),
-    c.creationDate ?? "", c.enrichedAt ?? "",
-  ]);
-  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
-<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>
-<x:ExcelWorksheet><x:Name>Comptes</x:Name></x:ExcelWorksheet>
-</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
-<body><table>${toRow(headers)}${dataRows.map(toRow).join("")}</table></body></html>`;
-  const blob = new Blob(["\uFEFF" + html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+  const esc = (v: string | number) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [
+    headers.map(esc).join(";"),
+    ...rows.map(c => [
+      c.name, c.siren ?? "", c.siret ?? "",
+      c.legalForm ?? "", c.apeCode ?? "", c.headcountBand ?? "",
+      STATUS_META[c.status].label,
+      c.region ?? "", c.department ?? "", c.city ?? "", c.postalCode ?? "", c.address ?? "",
+      String(c.icp), String(c.contacts), String(c.deals),
+      c.creationDate ?? "", c.enrichedAt ?? "",
+    ].map(esc).join(";"))
+  ];
+  const csv = "\uFEFF" + lines.join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+  const a = document.createElement("a");
+  document.body.appendChild(a);
+  a.href = url; a.download = filename.replace(/\.xls$/, ".csv"); a.style.display = "none"; a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
 }
 
 // ─── Composant principal ─────────────────────────────────────────
@@ -140,10 +140,10 @@ export function ComptesClient({ companies }: { companies: Company[] }) {
   // ── Export ──────────────────────────────────────────────────────
   function exportSelected() {
     const rows = filtered.filter(c => selected.has(c.id));
-    exportToExcel(rows, `comptes-selection-${new Date().toISOString().slice(0,10)}.xls`);
+    exportToCSV(rows, `comptes-selection-${new Date().toISOString().slice(0,10)}.xls`);
   }
   function exportAll() {
-    exportToExcel(filtered, `comptes-${new Date().toISOString().slice(0,10)}.xls`);
+    exportToCSV(filtered, `comptes-${new Date().toISOString().slice(0,10)}.xls`);
   }
 
   // ── Compteurs onglets ───────────────────────────────────────────
